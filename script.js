@@ -77,11 +77,11 @@ const CHECKLIST_SECTIONS = [
       {
         id: "soi-pay-items-match",
         label:
-          "Starting on Page 1 of the schedule of items, compare the schedule to the summary of quantities in the plans. Check item code, description, unit, and quantities all match for all pay items.",
+          "Pay Items:Starting on Page 1 of the schedule of items, compare the schedule to the summary of quantities in the plans. Check item code, description, unit, and quantities all match for all pay items.",
       },
       {
         id: "soi-alternates",
-        label:
+        label: 
           "Alternates on the schedule of items: Ensure correct section naming (A0 - 1, A0 - 2, etc.).",
       },
       {
@@ -125,6 +125,11 @@ const CHECKLIST_SECTIONS = [
     description: "",
     items: [
       {
+        id: "npdes-dbe-goal",
+        label:
+          "DBE Goal forms: If a DBE goal was assigned to the project, check the Job Number on the DBE Participation and the Certification to Submit DBE Participation forms. DBE Goal _______%.",
+      },
+      {
         id: "npdes-cert",
         label:
           "NPDES Certification: If the Storm Water Pollution Prevention Plan SP was included, check the Job Number on Contractorâ€™s Certification Statement.",
@@ -145,6 +150,10 @@ const CHECKLIST_SECTIONS = [
         id: "supp-swppp",
         label:
           "SWPPP SP: Storm Water Pollution Prevention Plan SP, if used, find the SP and note the number of disturbed acres__.",
+      },
+      {
+        id: "supp-dbe-goals",
+        label: "DBE Goals SP: Goals for DBE Participation SP.",
       },
       {
         id: "supp-verify-all",
@@ -196,6 +205,13 @@ const CHECKLIST_SECTIONS = [
 // State & helpers
 // ==============================
 const STORAGE_KEY = "ccdChecklistState_v1";
+const STATE_EXCLUDE_ITEM_IDS = new Set([
+  "cov-title-vi",
+  "npdes-dbe-goal",
+  "cl-fed-aid-certs",
+  "cl-bidders-list",
+  "supp-dbe-goals",
+]);
 
 const state = {
   items: {}, // itemId -> {checked, note}
@@ -203,6 +219,17 @@ const state = {
 
 function getAllItems() {
   return CHECKLIST_SECTIONS.flatMap((sec) => sec.items || []);
+}
+
+function getFundingFilteredItems() {
+  const isStateFunded = document.getElementById("meta-stateFunded")?.checked;
+  return CHECKLIST_SECTIONS.flatMap((sec) => {
+    if (isStateFunded && sec.id === "federal-reqs") return [];
+    return (sec.items || []).filter((item) => {
+      if (isStateFunded && STATE_EXCLUDE_ITEM_IDS.has(item.id)) return false;
+      return true;
+    });
+  });
 }
 
 // Collect metadata from the DOM
@@ -226,7 +253,7 @@ function collectMetaFromDom() {
     reviewDate: get("meta-reviewDate"),
     stateFunded: get("meta-stateFunded"),
     federallyFunded: get("meta-federallyFunded"),
-    notUsed: get("meta-notUsed"),
+    generalComments: get("meta-generalComments"),
   };
 }
 
@@ -250,7 +277,7 @@ function applyMetaToDom(meta) {
   set("meta-reviewDate", meta.reviewDate);
   set("meta-stateFunded", meta.stateFunded);
   set("meta-federallyFunded", meta.federallyFunded);
-  set("meta-notUsed", meta.notUsed);
+  set("meta-generalComments", meta.generalComments);
 }
 
 function setTodayReviewDate() {
@@ -278,12 +305,13 @@ function clearForNewProject() {
     "meta-county",
     "meta-lettingTime",
     "meta-reviewer",
+    "meta-generalComments",
   ].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
 
-  ["meta-stateFunded", "meta-federallyFunded", "meta-notUsed"].forEach((id) => {
+  ["meta-stateFunded", "meta-federallyFunded"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.checked = false;
   });
@@ -326,7 +354,7 @@ function loadStateFromStorage() {
 
 // Progress chips
 function updateProgress() {
-  const allItems = getAllItems();
+  const allItems = getFundingFilteredItems();
   const total = allItems.length;
   const checked = allItems.filter(
     (it) => state.items[it.id] && state.items[it.id].checked
@@ -349,11 +377,8 @@ function updateProgress() {
 function syncBadges() {
   const stateFunded = document.getElementById("meta-stateFunded").checked;
   const fed = document.getElementById("meta-federallyFunded").checked;
-  const notUsed = document.getElementById("meta-notUsed").checked;
-
   document.getElementById("badge-state").hidden = !stateFunded;
   document.getElementById("badge-fed").hidden = !fed;
-  document.getElementById("badge-notUsed").hidden = !notUsed;
 }
 
 // ==============================
@@ -364,6 +389,7 @@ function renderChecklist() {
   const query = (document.getElementById("searchInput").value || "")
     .toLowerCase()
     .trim();
+  const isStateFunded = document.getElementById("meta-stateFunded")?.checked;
 
   if (!container) return;
   container.innerHTML = "";
@@ -374,7 +400,10 @@ function renderChecklist() {
     const titleMatch = sec.title.toLowerCase().includes(query);
     const descMatch = (sec.description || "").toLowerCase().includes(query);
 
+    if (isStateFunded && sec.id === "federal-reqs") return;
+
     const filteredItems = (sec.items || []).filter((item) => {
+      if (isStateFunded && STATE_EXCLUDE_ITEM_IDS.has(item.id)) return false;
       if (!query) return true;
       const labelMatch = item.label.toLowerCase().includes(query);
       return labelMatch || titleMatch || descMatch;
@@ -574,8 +603,20 @@ async function exportPdf() {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
 
   const meta = collectMetaFromDom();
-  const totalItems = getAllItems().length;
-  const completedItems = getAllItems().filter(
+  const isStateFunded = !!meta.stateFunded;
+
+  const filteredSections = CHECKLIST_SECTIONS.map((sec) => {
+    if (isStateFunded && sec.id === "federal-reqs") return null;
+    const items = (sec.items || []).filter((item) => {
+      if (isStateFunded && STATE_EXCLUDE_ITEM_IDS.has(item.id)) return false;
+      return true;
+    });
+    return items.length ? { ...sec, items } : null;
+  }).filter(Boolean);
+
+  const filteredItems = filteredSections.flatMap((sec) => sec.items || []);
+  const totalItems = filteredItems.length;
+  const completedItems = filteredItems.filter(
     (it) => state.items[it.id] && state.items[it.id].checked
   ).length;
   const remainingItems = Math.max(totalItems - completedItems, 0);
@@ -729,18 +770,34 @@ async function exportPdf() {
   });
   y += rowHeight * tableRows.length + 14;
 
+  // General comments box
+  const generalNotes = (meta.generalComments || "").trim();
+  if (generalNotes) {
+    const lines = doc.splitTextToSize(generalNotes, contentWidth - 18);
+    const boxHeight = lines.length * 14 + 28;
+    ensureSpace(boxHeight + 12);
+    doc.setFillColor(248, 250, 253);
+    doc.setDrawColor(...lightLine);
+    doc.rect(margin, y, contentWidth, boxHeight, "F");
+    doc.rect(margin, y, contentWidth, boxHeight);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...brandBlue);
+    doc.text("General comments / notes", margin + 10, y + 16);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(60);
+    doc.text(lines, margin + 10, y + 32);
+    doc.setTextColor(0);
+    y += boxHeight + 12;
+  }
+
   // Funding bar
-  if (meta.stateFunded || meta.federallyFunded || meta.notUsed) {
-    const label = meta.stateFunded
-      ? "100% State Funded"
-      : meta.federallyFunded
-      ? "Federal Aid"
-      : "Checklist Not Used";
-    const color = meta.stateFunded
-      ? [0, 92, 200]
-      : meta.federallyFunded
-      ? [32, 127, 198]
-      : [220, 120, 40];
+  if (meta.stateFunded || meta.federallyFunded) {
+    const label = meta.stateFunded ? "100% State Funded" : "Federal Aid";
+    const color = meta.stateFunded ? [0, 92, 200] : [32, 127, 198];
     doc.setFillColor(...color);
     doc.rect(margin, y, contentWidth, 14, "F");
     doc.setFont("helvetica", "bold");
@@ -784,7 +841,7 @@ async function exportPdf() {
   const reviewerX = margin + itemTextWidth + 60;
   const dateX = margin + itemTextWidth + 130;
 
-  CHECKLIST_SECTIONS.forEach((sec) => {
+  filteredSections.forEach((sec) => {
     ensureSpace(80);
     doc.setFillColor(240, 245, 255);
     doc.setDrawColor(...brandBlue);
@@ -891,7 +948,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "meta-reviewDate",
     "meta-stateFunded",
     "meta-federallyFunded",
-    "meta-notUsed",
+    "meta-generalComments",
   ];
   metaIds.forEach((id) => {
     const el = document.getElementById(id);
@@ -900,6 +957,10 @@ document.addEventListener("DOMContentLoaded", () => {
     el.addEventListener(evt, () => {
       if (el.type === "checkbox") syncBadges();
       saveStateToStorage();
+      if (el.id === "meta-stateFunded" || el.id === "meta-federallyFunded") {
+        renderChecklist();
+      }
+      if (el.type === "checkbox") updateProgress();
     });
   });
 
@@ -926,9 +987,3 @@ document.addEventListener("DOMContentLoaded", () => {
   syncBadges();
   renderChecklist();
 });
-
-
-
-
-
-

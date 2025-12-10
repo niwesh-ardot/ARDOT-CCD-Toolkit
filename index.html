@@ -165,10 +165,6 @@
                   <input type="checkbox" id="meta-federallyFunded" />
                   <span>Federally funded project</span>
                 </label>
-                <label class="check-row">
-                  <input type="checkbox" id="meta-notUsed" />
-                  <span>Checklist not used</span>
-                </label>
               </div>
 
               <div class="meta-legend">
@@ -181,7 +177,17 @@
               <div class="meta-badges">
                 <span class="badge" id="badge-state" hidden>State funded</span>
                 <span class="badge badge-info" id="badge-fed" hidden>Federal aid</span>
-                <span class="badge badge-warn" id="badge-notUsed" hidden>Checklist not used</span>
+              </div>
+
+              <div class="general-notes">
+                <label class="field field-wide">
+                  <span>General comments / notes</span>
+                  <textarea
+                    id="meta-generalComments"
+                    rows="4"
+                    placeholder="Overall notes about this proposal"
+                  ></textarea>
+                </label>
               </div>
             </div>
           </div>
