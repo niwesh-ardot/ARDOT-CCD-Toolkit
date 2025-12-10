@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Proposal Checklist - CCD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-circle">CC</div>
+        <div class="sidebar-title">
+          <h1>ARDOT CCD Toolkit</h1>
+          <p>Proposal Checklist</p>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active">
+          <span class="nav-icon" aria-hidden="true"></span>
+          <span>Checklist</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <p>Built for Construction Contracts Development reviews.</p>
+      </div>
+    </aside>
+
+    <!-- Main area -->
+    <div class="main">
+
+      <!-- Top bar -->
+      <header class="topbar">
+        <div class="topbar-inner">
+          <div class="topbar-row">
+            <div class="topbar-left">
+              <div class="brand-lockup">
+                <img src="assets/ardot-logo.svg" alt="ARDOT logo" class="ardot-logo" />
+                <div>
+                  <h2>Proposal Checklist</h2>
+                  <p>Track CCD proposal reviews, notes, and completion in one place.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="toolbar-actions">
+              <button id="btn-save-json" class="btn-ghost">Save JSON</button>
+              <button id="btn-load-json" class="btn-ghost">Load JSON</button>
+              <button id="btn-export-pdf" class="btn-primary">Download PDF</button>
+              <input
+                type="file"
+                id="file-load-json"
+                accept="application/json"
+                hidden
+              />
+            </div>
+          </div>
+
+          <div class="topbar-grid">
+            <div class="search-wrapper">
+              <span class="search-icon" aria-hidden="true"></span>
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Search sections or checklist items"
+              />
+            </div>
+
+            <div class="stat-chips">
+              <div class="chip">
+                <span class="chip-label">Total</span>
+                <span class="chip-value" id="stat-total">0</span>
+              </div>
+              <div class="chip chip-success">
+                <span class="chip-label">Completed</span>
+                <span class="chip-value" id="stat-complete">0</span>
+              </div>
+              <div class="chip chip-warn">
+                <span class="chip-label">Remaining</span>
+                <span class="chip-value" id="stat-remaining">0</span>
+              </div>
+              <div class="chip chip-progress">
+                <span class="chip-label">Progress</span>
+                <span class="chip-value" id="progressText">0/0 (0%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <main class="content">
+
+        <section class="layout-grid">
+
+          <!-- Metadata column -->
+          <div class="card meta-card">
+            <div class="card-header">
+              <h3>Project &amp; Review Metadata</h3>
+              <p>Verify job number, funding, and review info before you begin.</p>
+            </div>
+
+            <div class="card-body">
+
+              <div class="field-grid">
+                <label class="field">
+                  <span>Call No.</span>
+                  <input type="text" id="meta-callNo" />
+                </label>
+
+                <label class="field">
+                  <span>Job No.</span>
+                  <input type="text" id="meta-jobNo" />
+                </label>
+
+                <label class="field">
+                  <span>FAP No.</span>
+                  <input type="text" id="meta-fapNo" />
+                </label>
+
+                <label class="field field-wide">
+                  <span>Job Name</span>
+                  <input type="text" id="meta-jobName" />
+                </label>
+
+                <label class="field field-wide">
+                  <span>Route / Section</span>
+                  <input type="text" id="meta-routeSection" />
+                </label>
+
+                <label class="field">
+                  <span>County(ies)</span>
+                  <input type="text" id="meta-county" />
+                </label>
+
+                <label class="field">
+                  <span>Letting Time</span>
+                  <input type="text" id="meta-lettingTime" placeholder="10:00 or 1:30" />
+                </label>
+
+                <label class="field">
+                  <span>Reviewer initials</span>
+                  <input type="text" id="meta-reviewer" />
+                </label>
+
+                <label class="field">
+                  <span>Review date</span>
+                  <input type="date" id="meta-reviewDate" />
+                </label>
+              </div>
+
+              <div class="divider"></div>
+
+              <div class="flag-grid">
+                <label class="check-row">
+                  <input type="checkbox" id="meta-stateFunded" />
+                  <span>100% State funded project</span>
+                </label>
+                <label class="check-row">
+                  <input type="checkbox" id="meta-federallyFunded" />
+                  <span>Federally funded project</span>
+                </label>
+                <label class="check-row">
+                  <input type="checkbox" id="meta-notUsed" />
+                  <span>Checklist not used</span>
+                </label>
+              </div>
+
+              <div class="meta-legend">
+                <p>
+                  This web checklist mirrors the CCD paper form. You can use it
+                  as a review helper and then file the official PDF or hard copy.
+                </p>
+              </div>
+
+              <div class="meta-badges">
+                <span class="badge" id="badge-state" hidden>State funded</span>
+                <span class="badge badge-info" id="badge-fed" hidden>Federal aid</span>
+                <span class="badge badge-warn" id="badge-notUsed" hidden>Checklist not used</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Checklist column -->
+          <div class="card checklist-card">
+            <div class="card-header">
+              <div>
+                <h3>Checklist items</h3>
+                <p>Tick items as you verify them. Add quick notes for anything that needs follow up.</p>
+              </div>
+            </div>
+
+            <div class="card-body checklist-body">
+              <div id="checklistContainer" class="checklist-container">
+                <!-- Populated by script.js -->
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <div class="footer-actions">
+          <button id="btn-clear-all" class="btn-danger">Clear ticks/notes &amp; metadata</button>
+        </div>
+
+      </main>
+    </div>
+  </div>
+    <!-- jsPDF for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
+  <script src="script.js"></script>
+</body>
+</html>
+
+
+
+
+
