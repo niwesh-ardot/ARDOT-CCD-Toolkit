@@ -174,11 +174,11 @@ const CHECKLIST_SECTIONS = [
       {
         id: "fed-eeo-notice",
         label:
-          "Equal Employment Opportunity â€“ Notice to Contractors (7/26/1996, 1 page).",
+          "Equal Employment Opportunity - Notice to Contractors (7/26/1996, 1 page).",
       },
       {
         id: "fed-eeo-resp",
-        label: "Specific EEO Responsibilities (23 U.S.C. 140, 3 pages).",
+        label: "Specific Equal Employment Opportunity Responsibilities (23 U.S.C. 140) (7/26/1996, 3 pages).",
       },
       {
         id: "fed-eeo-goals",
@@ -248,6 +248,7 @@ function collectMetaFromDom() {
     jobName: get("meta-jobName"),
     routeSection: get("meta-routeSection"),
     county: get("meta-county"),
+    district: get("meta-district"),
     lettingTime: get("meta-lettingTime"),
     reviewer: get("meta-reviewer"),
     reviewDate: get("meta-reviewDate"),
@@ -272,6 +273,7 @@ function applyMetaToDom(meta) {
   set("meta-jobName", meta.jobName);
   set("meta-routeSection", meta.routeSection);
   set("meta-county", meta.county);
+  set("meta-district", meta.district);
   set("meta-lettingTime", meta.lettingTime);
   set("meta-reviewer", meta.reviewer);
   set("meta-reviewDate", meta.reviewDate);
@@ -303,6 +305,7 @@ function clearForNewProject() {
     "meta-jobName",
     "meta-routeSection",
     "meta-county",
+    "meta-district",
     "meta-lettingTime",
     "meta-reviewer",
     "meta-generalComments",
@@ -379,6 +382,129 @@ function syncBadges() {
   const fed = document.getElementById("meta-federallyFunded").checked;
   document.getElementById("badge-state").hidden = !stateFunded;
   document.getElementById("badge-fed").hidden = !fed;
+}
+
+// ==============================
+// Go List autofill (Job No. lookup)
+// ==============================
+const goListState = { entries: [], byJobNo: {} };
+
+function normalizeJobNo(value) {
+  return (value || "").toString().trim().toUpperCase();
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let current = "";
+  let row = [];
+  let inQuotes = false;
+
+  const pushCell = () => {
+    row.push(current);
+    current = "";
+  };
+
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch === '"') {
+      if (inQuotes && text[i + 1] === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === "," && !inQuotes) {
+      pushCell();
+    } else if ((ch === "\n" || ch === "\r") && !inQuotes) {
+      pushCell();
+      rows.push(row);
+      row = [];
+      if (ch === "\r" && text[i + 1] === "\n") i += 1;
+    } else {
+      current += ch;
+    }
+  }
+  pushCell();
+  rows.push(row);
+  return rows.filter((r) => r.length && r.some((cell) => cell && cell.trim()));
+}
+
+function hydrateGoList(rows) {
+  if (!rows.length) return;
+  const headers = rows[0].map((h) => h.trim());
+  const headerIndex = {};
+  headers.forEach((h, idx) => {
+    headerIndex[h.toLowerCase()] = idx;
+  });
+  const getCell = (row, key) => row[headerIndex[key.toLowerCase()]] || "";
+  const clean = (value) => (value || "").replace(/\s+/g, " ").trim();
+
+  const entries = rows.slice(1).map((row) => ({
+    callNo: clean(getCell(row, "Call No.")),
+    jobNo: clean(getCell(row, "Job No.")),
+    district: clean(getCell(row, "District")),
+    county: clean(getCell(row, "County(ies)")),
+    fapNo: clean(getCell(row, "FAP No.")),
+    jobName: clean(getCell(row, "Job Name")),
+    routeSection: clean(getCell(row, "Route / Section")),
+  }));
+
+  goListState.entries = entries.filter((e) => normalizeJobNo(e.jobNo));
+  goListState.byJobNo = {};
+  goListState.entries.forEach((entry) => {
+    const key = normalizeJobNo(entry.jobNo);
+    if (!goListState.byJobNo[key]) {
+      goListState.byJobNo[key] = entry;
+    }
+  });
+}
+
+function populateJobNoOptions() {
+  const datalist = document.getElementById("jobNoOptions");
+  if (!datalist) return;
+  datalist.innerHTML = "";
+  goListState.entries.forEach((entry) => {
+    if (!entry.jobNo) return;
+    const option = document.createElement("option");
+    option.value = entry.jobNo;
+    option.textContent = `${entry.jobNo} - ${entry.jobName || "No job name"}`;
+    option.label = option.textContent;
+    datalist.appendChild(option);
+  });
+}
+
+function applyGoListMatch(jobNoValue) {
+  const match = goListState.byJobNo[normalizeJobNo(jobNoValue)];
+  if (!match) return;
+  const currentMeta = collectMetaFromDom();
+  applyMetaToDom({
+    ...currentMeta,
+    callNo: match.callNo || currentMeta.callNo,
+    jobNo: match.jobNo || currentMeta.jobNo,
+    fapNo: match.fapNo || currentMeta.fapNo,
+    jobName: match.jobName || currentMeta.jobName,
+    routeSection: match.routeSection || currentMeta.routeSection,
+    county: match.county || currentMeta.county,
+    district: match.district || currentMeta.district,
+  });
+  saveStateToStorage();
+}
+
+async function loadGoListCsv() {
+  try {
+    const res = await fetch("data/Golist.csv");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    hydrateGoList(parseCsv(text));
+    populateJobNoOptions();
+
+    const jobInput = document.getElementById("meta-jobNo");
+    if (jobInput && jobInput.value) {
+      applyGoListMatch(jobInput.value);
+    }
+  } catch (err) {
+    console.error("Failed to load Go List CSV", err);
+  }
 }
 
 // ==============================
@@ -730,26 +856,31 @@ async function exportPdf() {
   const tableRows = [
     [
       { label: "Job:", value: meta.jobNo || "" },
+      { label: "Call No.:", value: meta.callNo || "" },
       { label: "FAP:", value: meta.fapNo || "" },
-      { label: "Letting Time:", value: meta.lettingTime || "" },
+      { label: "District:", value: meta.district || "" },
     ],
     [
       { label: "Job Name:", value: meta.jobName || "" },
       { label: "Route/Section:", value: meta.routeSection || "" },
       { label: "County(ies):", value: meta.county || "" },
+      { label: "Letting Time:", value: meta.lettingTime || "" },
     ],
     [
       { label: "Reviewer:", value: meta.reviewer || "" },
       { label: "Date:", value: meta.reviewDate || "" },
-      { label: "Call No.:", value: meta.callNo || "" },
     ],
   ];
 
-  const colWidth = contentWidth / 3;
+  const maxCols =
+    tableRows.reduce((max, row) => Math.max(max, row.length), 0) || 1;
+  const colWidth = contentWidth / maxCols;
   const rowHeight = 34;
   doc.setLineWidth(0.6);
   tableRows.forEach((row, rIndex) => {
-    row.forEach((cell, cIndex) => {
+    const cells = [...row];
+    while (cells.length < maxCols) cells.push({ label: "", value: "" });
+    cells.forEach((cell, cIndex) => {
       const x = margin + colWidth * cIndex;
       const yTop = y + rowHeight * rIndex;
       doc.setFillColor(rIndex % 2 === 0 ? 250 : 244, 246, 251);
@@ -758,14 +889,18 @@ async function exportPdf() {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
       doc.setTextColor(90, 90, 90);
-      doc.text(cell.label, x + 8, yTop + 12);
+      if (cell.label) {
+        doc.text(cell.label, x + 8, yTop + 12);
+      }
 
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
       doc.setTextColor(0, 0, 0);
-      doc.text(cell.value || "—", x + 8, yTop + 26, {
-        maxWidth: colWidth - 16,
-      });
+      if (cell.label || cell.value) {
+        doc.text(cell.value || "-", x + 8, yTop + 26, {
+          maxWidth: colWidth - 16,
+        });
+      }
     });
   });
   y += rowHeight * tableRows.length + 14;
@@ -943,6 +1078,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "meta-jobName",
     "meta-routeSection",
     "meta-county",
+    "meta-district",
     "meta-lettingTime",
     "meta-reviewer",
     "meta-reviewDate",
@@ -963,6 +1099,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if (el.type === "checkbox") updateProgress();
     });
   });
+
+  const jobNoInput = document.getElementById("meta-jobNo");
+  if (jobNoInput) {
+    const triggerLookup = () => applyGoListMatch(jobNoInput.value);
+    jobNoInput.addEventListener("input", triggerLookup);
+    jobNoInput.addEventListener("change", triggerLookup);
+    jobNoInput.addEventListener("blur", triggerLookup);
+  }
+
+  loadGoListCsv();
 
   // Buttons
   const btnSave = document.getElementById("btn-save-json");
