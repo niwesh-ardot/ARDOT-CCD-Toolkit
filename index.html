@@ -5,6 +5,11 @@
   <title>Proposal Checklist - CCD</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="styles.css" />
+  <!-- PDF OCR + markup dependencies -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 </head>
 <body>
   <div class="app">
@@ -20,9 +25,13 @@
       </div>
 
       <nav class="nav">
-        <button class="nav-item active">
+        <button class="nav-item active" type="button" data-section-target="checklist">
           <span class="nav-icon" aria-hidden="true"></span>
           <span>Proposal Checklist</span>
+        </button>
+        <button class="nav-item" type="button" data-section-target="checker" data-scroll-target="#proposal-checker">
+          <span class="nav-icon" aria-hidden="true"></span>
+          <span>Proposal Checker</span>
         </button>
       </nav>
 
@@ -35,7 +44,7 @@
     <div class="main">
 
       <!-- Top bar -->
-      <header class="topbar">
+      <header class="topbar" data-section="checklist">
         <div class="topbar-inner">
           <div class="topbar-row">
             <div class="topbar-left">
@@ -96,7 +105,7 @@
       <!-- Content -->
       <main class="content">
 
-        <section class="layout-grid">
+        <section class="layout-grid" data-section="checklist">
 
           <!-- Metadata column -->
           <div class="card meta-card">
@@ -216,10 +225,155 @@
 
         </section>
 
-        <div class="footer-actions">
+        <div class="footer-actions" data-section="checklist">
           <button id="btn-clear-all" class="btn-danger">Clear ticks/notes &amp; metadata</button>
         </div>
 
+        <!-- Proposal checker (PDF OCR + Markup) -->
+        <section id="proposal-checker" class="card ocr-card" data-section="checker">
+          <div class="card-header">
+            <div class="ocr-header">
+              <div>
+                <h3>Proposal Checker (PDF OCR + Markup)</h3>
+                <p>Convert scanned proposal PDFs to editable text, mark up pages, and export a stamped copy.</p>
+              </div>
+              <div class="ocr-badges">
+                <span class="badge">In-browser</span>
+                <span class="badge badge-info">No upload</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body ocr-body">
+            <div class="ocr-grid">
+              <div class="ocr-col">
+                <div class="ocr-panel">
+                  <div class="ocr-panel-header">
+                    <h4>Upload &amp; OCR</h4>
+                    <div class="ocr-actions">
+                      <label class="file-btn">
+                        <input id="ocrFile" type="file" accept="application/pdf" />
+                        <span>Select PDF</span>
+                      </label>
+                      <button id="ocrStart" class="btn-primary" disabled>Start OCR</button>
+                      <button id="ocrCancel" class="btn-ghost" disabled>Cancel</button>
+                    </div>
+                  </div>
+
+                  <div class="ocr-fields">
+                    <label class="field">
+                      <span>OCR language</span>
+                      <select id="ocrLang">
+                        <option value="eng" selected>English (eng)</option>
+                      </select>
+                    </label>
+                    <label class="field">
+                      <span>Render scale</span>
+                      <select id="ocrScale">
+                        <option value="1.5">1.5x (faster)</option>
+                        <option value="2" selected>2x (balanced)</option>
+                        <option value="3">3x (better OCR, slower)</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div class="ocr-progress">
+                    <div class="ocr-progress-bar">
+                      <div id="ocrProgressBar" class="ocr-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div id="ocrProgressText" class="ocr-progress-text">No file selected.</div>
+                  </div>
+
+                  <div id="ocrLog" class="ocr-log" aria-live="polite"></div>
+                </div>
+
+                <div class="ocr-panel">
+                  <div class="ocr-panel-header">
+                    <h4>Recognized Text</h4>
+                    <div class="ocr-actions">
+                      <button id="ocrCopy" class="btn-ghost" disabled>Copy</button>
+                      <button id="ocrDownload" class="btn-ghost" disabled>Download .txt</button>
+                      <button id="ocrClear" class="btn-ghost">Clear</button>
+                    </div>
+                  </div>
+                  <textarea
+                    id="ocrOutput"
+                    class="ocr-output"
+                    placeholder="OCR text will appear here..."
+                    spellcheck="true"
+                  ></textarea>
+                  <div class="ocr-hint">Tip: If OCR misses characters, try a higher render scale or a clearer scan.</div>
+                </div>
+              </div>
+
+              <div class="ocr-col">
+                <div class="ocr-panel">
+                  <div class="ocr-panel-header">
+                    <h4>PDF Viewer &amp; Markup</h4>
+                    <div class="viewer-controls">
+                      <button id="ocrPrevPage" class="btn-ghost" disabled>Prev</button>
+                      <div class="viewer-page">Page <span id="ocrPageNum">0</span> / <span id="ocrPageCount">0</span></div>
+                      <button id="ocrNextPage" class="btn-ghost" disabled>Next</button>
+                    </div>
+                  </div>
+
+                  <div class="tool-row">
+                    <div class="tool-group" role="toolbar" aria-label="Markup tools">
+                      <button class="tool-btn active" data-tool="pen">Pen</button>
+                      <button class="tool-btn" data-tool="highlighter">Highlighter</button>
+                      <button class="tool-btn" data-tool="eraser">Eraser</button>
+                      <button class="tool-btn" data-tool="stamp">Stamp</button>
+                    </div>
+
+                    <div class="tool-group">
+                      <label class="mini-field">
+                        <span>Size</span>
+                        <input id="ocrBrushSize" type="range" min="2" max="28" value="6" />
+                      </label>
+                      <label class="mini-field">
+                        <span>Color</span>
+                        <input id="ocrBrushColor" type="color" value="#ffcc00" />
+                      </label>
+                    </div>
+
+                    <div class="tool-group">
+                      <div class="zoom-controls">
+                        <button id="ocrZoomOut" class="btn-ghost" disabled>-</button>
+                        <span id="ocrZoomValue" class="zoom-value">100%</span>
+                        <button id="ocrZoomIn" class="btn-ghost" disabled>+</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="tool-row tool-row-actions">
+                    <div class="tool-group">
+                      <button id="ocrMarkAll" class="btn-ghost" disabled>Mark all pages</button>
+                      <button id="ocrClearMarkup" class="btn-ghost" disabled>Clear markup</button>
+                    </div>
+                    <button id="ocrExportPdf" class="btn-primary" disabled>Export marked PDF</button>
+                  </div>
+
+                  <div class="viewer-shell">
+                    <div class="canvas-stack">
+                      <canvas id="ocrPdfCanvas"></canvas>
+                      <canvas id="ocrMarkupCanvas"></canvas>
+                    </div>
+                  </div>
+
+                  <div class="stamp-row">
+                    <input
+                      id="ocrStampText"
+                      type="text"
+                      placeholder="Stamp text (example: APPROVED, SIGNED, 12/16/2025)"
+                    />
+                    <button id="ocrApplyStamp" class="btn-ghost" disabled>Place stamp</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <canvas id="ocrHiddenCanvas" class="hidden"></canvas>
+          </div>
+        </section>
       </main>
     </div>
   </div>
@@ -229,7 +383,3 @@
   <script src="script.js"></script>
 </body>
 </html>
-
-
-
-
