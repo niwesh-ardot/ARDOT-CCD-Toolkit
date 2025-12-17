@@ -908,6 +908,52 @@ body {
   color: var(--text-muted);
 }
 
+.viewer-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #d6e3f5;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #fff;
+}
+
+.viewer-jump input[type="number"] {
+  width: 64px;
+  border: none;
+  outline: none;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.viewer-jump input[type="number"]:disabled {
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.viewer-jump-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.viewer-slider {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.viewer-slider input[type="range"] {
+  flex: 1;
+  accent-color: #0056a4;
+}
+
+.viewer-slider-value {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  min-width: 64px;
+}
+
 .tool-row {
   display: flex;
   flex-wrap: wrap;

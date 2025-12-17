@@ -1074,6 +1074,9 @@ function initProposalChecker() {
     nextPage: document.getElementById("ocrNextPage"),
     pageNum: document.getElementById("ocrPageNum"),
     pageCount: document.getElementById("ocrPageCount"),
+    pageInput: document.getElementById("ocrPageInput"),
+    pageSlider: document.getElementById("ocrPageSlider"),
+    pageSliderValue: document.getElementById("ocrPageSliderValue"),
     pdfCanvas: document.getElementById("ocrPdfCanvas"),
     markupCanvas: document.getElementById("ocrMarkupCanvas"),
     hiddenCanvas: document.getElementById("ocrHiddenCanvas"),
@@ -1084,6 +1087,7 @@ function initProposalChecker() {
     clearMarkup: document.getElementById("ocrClearMarkup"),
     exportPdf: document.getElementById("ocrExportPdf"),
     markAll: document.getElementById("ocrMarkAll"),
+    unmarkAll: document.getElementById("ocrUnmarkAll"),
     zoomIn: document.getElementById("ocrZoomIn"),
     zoomOut: document.getElementById("ocrZoomOut"),
     zoomValue: document.getElementById("ocrZoomValue"),
@@ -1141,9 +1145,45 @@ function initProposalChecker() {
     els.clearMarkup.disabled = !enabled;
     els.exportPdf.disabled = !enabled;
     els.markAll.disabled = !enabled;
+    if (els.unmarkAll) els.unmarkAll.disabled = !enabled;
     els.zoomIn.disabled = !enabled;
     els.zoomOut.disabled = !enabled;
     els.applyStamp.disabled = !enabled;
+    if (els.pageSlider) els.pageSlider.disabled = !enabled;
+    if (els.pageInput) els.pageInput.disabled = !enabled;
+  }
+
+  function syncPageControls() {
+    if (els.pageNum) els.pageNum.textContent = String(viewer.pageNum);
+    if (els.pageCount) els.pageCount.textContent = String(viewer.pageCount);
+    if (els.pageSlider) {
+      els.pageSlider.max = String(Math.max(viewer.pageCount, 1));
+      els.pageSlider.value = String(Math.max(1, viewer.pageNum));
+    }
+    if (els.pageSliderValue) {
+      const label = viewer.pdf
+        ? `Page ${viewer.pageNum} of ${viewer.pageCount}`
+        : "Page 0";
+      els.pageSliderValue.textContent = label;
+    }
+    if (els.pageInput) {
+      els.pageInput.min = "1";
+      els.pageInput.max = String(Math.max(viewer.pageCount, 1));
+      els.pageInput.value = viewer.pdf ? String(viewer.pageNum) : "1";
+      els.pageInput.placeholder = viewer.pdf ? `1 - ${viewer.pageCount}` : "1";
+    }
+  }
+
+  async function goToPage(targetPage) {
+    if (!viewer.pdf) return;
+    const next = Math.min(Math.max(1, targetPage), viewer.pageCount);
+    if (next === viewer.pageNum) {
+      syncPageControls();
+      return;
+    }
+    await saveCurrentMarkup();
+    viewer.pageNum = next;
+    await renderPage(viewer.pageNum);
   }
 
   function ensureDepsLoaded() {
@@ -1178,6 +1218,11 @@ function initProposalChecker() {
 
     if (!file) {
       setProgress(0, "No file selected.");
+      viewer.pdf = null;
+      viewer.pageCount = 0;
+      viewer.pageNum = 0;
+      viewer.markupByPage.clear();
+      syncPageControls();
       setViewerEnabled(false);
       return;
     }
@@ -1275,17 +1320,48 @@ function initProposalChecker() {
 
   els.prevPage.addEventListener("click", async () => {
     if (!viewer.pdf || viewer.pageNum <= 1) return;
-    await saveCurrentMarkup();
-    viewer.pageNum -= 1;
-    await renderPage(viewer.pageNum);
+    await goToPage(viewer.pageNum - 1);
   });
 
   els.nextPage.addEventListener("click", async () => {
     if (!viewer.pdf || viewer.pageNum >= viewer.pageCount) return;
-    await saveCurrentMarkup();
-    viewer.pageNum += 1;
-    await renderPage(viewer.pageNum);
+    await goToPage(viewer.pageNum + 1);
   });
+
+  if (els.pageSlider) {
+    els.pageSlider.addEventListener("input", () => {
+      const val = Number(els.pageSlider.value || viewer.pageNum);
+      if (els.pageSliderValue) {
+        els.pageSliderValue.textContent = viewer.pdf
+          ? `Page ${val} of ${viewer.pageCount}`
+          : "Page 0";
+      }
+    });
+    els.pageSlider.addEventListener("change", async () => {
+      const val = Number(els.pageSlider.value || viewer.pageNum);
+      await goToPage(val);
+    });
+  }
+
+  if (els.pageInput) {
+    const commitInput = async () => {
+      const val = Number(els.pageInput.value);
+      if (Number.isNaN(val)) {
+        syncPageControls();
+        return;
+      }
+      await goToPage(val);
+      syncPageControls();
+    };
+    els.pageInput.addEventListener("keydown", async (evt) => {
+      if (evt.key === "Enter") {
+        evt.preventDefault();
+        await commitInput();
+      }
+    });
+    els.pageInput.addEventListener("change", commitInput);
+    els.pageInput.addEventListener("blur", commitInput);
+  }
 
   els.clearMarkup.addEventListener("click", async () => {
     if (!viewer.pdf) return;
@@ -1305,6 +1381,16 @@ function initProposalChecker() {
     await saveCurrentMarkup();
     await markAllPages();
   });
+
+  if (els.unmarkAll) {
+    els.unmarkAll.addEventListener("click", async () => {
+      if (!viewer.pdf) return;
+      viewer.markupByPage.clear();
+      viewer.markupCtx.clearRect(0, 0, els.markupCanvas.width, els.markupCanvas.height);
+      await renderPage(viewer.pageNum);
+      addLog("Removed markup from all pages.");
+    });
+  }
 
   els.zoomIn.addEventListener("click", async () => {
     if (!viewer.pdf) return;
@@ -1331,8 +1417,7 @@ function initProposalChecker() {
     viewer.pdfCtx = els.pdfCanvas.getContext("2d");
     viewer.markupCtx = els.markupCanvas.getContext("2d");
 
-    els.pageCount.textContent = String(viewer.pageCount);
-    els.pageNum.textContent = String(viewer.pageNum);
+    syncPageControls();
     setViewerEnabled(true);
     setActiveTool("pen");
     await renderPage(viewer.pageNum);
@@ -1347,7 +1432,8 @@ function initProposalChecker() {
     els.pdfCanvas.height = Math.floor(viewport.height);
     els.markupCanvas.width = els.pdfCanvas.width;
     els.markupCanvas.height = els.pdfCanvas.height;
-    els.pageNum.textContent = String(pageNum);
+    viewer.pageNum = pageNum;
+    syncPageControls();
 
     await page.render({ canvasContext: viewer.pdfCtx, viewport }).promise;
 

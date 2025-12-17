@@ -308,14 +308,22 @@
 
               <div class="ocr-col">
                 <div class="ocr-panel">
-                  <div class="ocr-panel-header">
-                    <h4>PDF Viewer &amp; Markup</h4>
-                    <div class="viewer-controls">
-                      <button id="ocrPrevPage" class="btn-ghost" disabled>Prev</button>
-                      <div class="viewer-page">Page <span id="ocrPageNum">0</span> / <span id="ocrPageCount">0</span></div>
-                      <button id="ocrNextPage" class="btn-ghost" disabled>Next</button>
+                    <div class="ocr-panel-header">
+                      <h4>PDF Viewer &amp; Markup</h4>
+                      <div class="viewer-controls">
+                        <button id="ocrPrevPage" class="btn-ghost" disabled>Prev</button>
+                        <div class="viewer-page">Page <span id="ocrPageNum">0</span> / <span id="ocrPageCount">0</span></div>
+                        <div class="viewer-jump">
+                          <input id="ocrPageInput" type="number" min="1" value="1" disabled aria-label="Go to page" />
+                          <span class="viewer-jump-label">Go</span>
+                        </div>
+                        <button id="ocrNextPage" class="btn-ghost" disabled>Next</button>
+                        <div class="viewer-slider">
+                          <input id="ocrPageSlider" type="range" min="1" max="1" value="1" disabled />
+                          <span id="ocrPageSliderValue" class="viewer-slider-value">Page 0</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
                   <div class="tool-row">
                     <div class="tool-group" role="toolbar" aria-label="Markup tools">
@@ -348,6 +356,7 @@
                   <div class="tool-row tool-row-actions">
                     <div class="tool-group">
                       <button id="ocrMarkAll" class="btn-ghost" disabled>Mark all pages</button>
+                      <button id="ocrUnmarkAll" class="btn-ghost" disabled>Remove mark all pages</button>
                       <button id="ocrClearMarkup" class="btn-ghost" disabled>Clear markup</button>
                     </div>
                     <button id="ocrExportPdf" class="btn-primary" disabled>Export marked PDF</button>
