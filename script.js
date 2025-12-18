@@ -388,6 +388,7 @@ function syncBadges() {
 // Go List autofill (Job No. lookup)
 // ==============================
 const goListState = { entries: [], byJobNo: {} };
+const specListState = { entries: [], byKey: {} };
 
 function normalizeJobNo(value) {
   return (value || "").toString().trim().toUpperCase();
@@ -504,6 +505,49 @@ async function loadGoListCsv() {
     }
   } catch (err) {
     console.error("Failed to load Go List CSV", err);
+  }
+}
+
+// ==============================
+// SS/SP Where and When list loader
+// ==============================
+function hydrateSpecList(rows) {
+  if (!rows.length) return;
+  const headers = rows[0].map((h) => h.trim());
+  const headerIndex = {};
+  headers.forEach((h, idx) => {
+    headerIndex[h.toLowerCase()] = idx;
+  });
+  const getCell = (row, key) => row[headerIndex[key.toLowerCase()]] || "";
+  const clean = (value) => (value || "").replace(/\s+/g, " ").trim();
+
+  const entries = rows.slice(1).map((row) => ({
+    category: clean(getCell(row, "Category")),
+    number: clean(getCell(row, "Number")),
+    title: clean(getCell(row, "Title")),
+    currentDate: clean(getCell(row, "Current Date")),
+  }));
+
+  specListState.entries = entries.filter((e) => e.number || e.title);
+  specListState.byKey = {};
+  specListState.entries.forEach((entry) => {
+    const keys = [];
+    if (entry.number) keys.push(entry.number.toLowerCase());
+    if (entry.title) keys.push(entry.title.toLowerCase());
+    keys.forEach((k) => {
+      if (!specListState.byKey[k]) specListState.byKey[k] = entry;
+    });
+  });
+}
+
+async function loadSpecListCsv() {
+  try {
+    const res = await fetch("data/WhereandWhenList.csv");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    hydrateSpecList(parseCsv(text));
+  } catch (err) {
+    console.error("Failed to load WhereandWhenList CSV", err);
   }
 }
 
@@ -1094,6 +1138,17 @@ function initProposalChecker() {
 
     stampText: document.getElementById("ocrStampText"),
     applyStamp: document.getElementById("ocrApplyStamp"),
+
+    specStatus: document.getElementById("ssspStatus"),
+    specResults: document.getElementById("ssspResults"),
+    specRun: document.getElementById("ssspRun"),
+    specClear: document.getElementById("ssspClear"),
+    specInput: document.getElementById("ssspInput"),
+
+    copyPageText: document.getElementById("ocrCopyPageText"),
+    pageTextBox: document.getElementById("ocrPageText"),
+    textSelectToggle: document.getElementById("ocrTextSelectToggle"),
+    textLayer: document.getElementById("ocrTextLayer"),
   };
 
   if (!els.pdfFile) return;
@@ -1112,6 +1167,8 @@ function initProposalChecker() {
     last: { x: 0, y: 0 },
     markupByPage: new Map(),
     zoom: 1,
+    pageTexts: new Map(),
+    textSelectMode: false,
   };
 
   function setProgress(pct, text) {
@@ -1149,8 +1206,291 @@ function initProposalChecker() {
     els.zoomIn.disabled = !enabled;
     els.zoomOut.disabled = !enabled;
     els.applyStamp.disabled = !enabled;
+    if (els.copyPageText) els.copyPageText.disabled = !enabled;
+    if (els.textSelectToggle) els.textSelectToggle.disabled = !enabled;
     if (els.pageSlider) els.pageSlider.disabled = !enabled;
     if (els.pageInput) els.pageInput.disabled = !enabled;
+  }
+
+  function updateSpecButtonState() {
+    const hasText = !!els.output.value.trim();
+    const hasPdf = !!viewer.pdfBytes;
+    if (els.specRun) els.specRun.disabled = !(hasText || hasPdf);
+  }
+
+  function setTextSelectMode(enabled) {
+    viewer.textSelectMode = !!enabled;
+    if (els.markupCanvas) {
+      els.markupCanvas.style.pointerEvents = enabled ? "none" : "auto";
+    }
+    if (els.pdfCanvas) {
+      els.pdfCanvas.style.pointerEvents = enabled ? "none" : "auto";
+    }
+    if (els.textLayer) {
+      els.textLayer.classList.toggle("selectable", enabled);
+      els.textLayer.classList.toggle("hidden", !enabled);
+    }
+    if (els.textSelectToggle) {
+      els.textSelectToggle.classList.toggle("tool-btn", true);
+      els.textSelectToggle.classList.toggle("active", enabled);
+    }
+  }
+
+  function parseUserSpecList() {
+    if (!els.specInput) return [];
+    return (els.specInput.value || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const key = line.toLowerCase();
+        const compact = key.replace(/[^a-z0-9]/g, "");
+        return { title: line, number: line, compact };
+      });
+  }
+
+  function normalizeDateVariants(dateStr) {
+    const raw = (dateStr || "").trim();
+    const variants = [];
+    const m = raw.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
+    if (m) {
+      let [ , mm, dd, yy ] = m;
+      const month = mm.padStart(2, "0");
+      const day = dd.padStart(2, "0");
+      const year = yy.length === 2 ? (parseInt(yy, 10) >= 50 ? `19${yy}` : `20${yy}`) : yy;
+      const compact = `${month}${day}${year}`;
+      variants.push(compact, `${parseInt(month, 10)}${parseInt(day, 10)}${year}`);
+    }
+    const digitsOnly = raw.replace(/\D+/g, "");
+    if (digitsOnly) variants.push(digitsOnly);
+    return { display: raw, variants: Array.from(new Set(variants)) };
+  }
+
+  function parsePages(rawText) {
+    const parts = rawText.split(/===== Page (\d+) =====/);
+    const pages = [];
+    for (let i = 1; i < parts.length; i += 2) {
+      const num = parseInt(parts[i], 10);
+      const body = (parts[i + 1] || "").trim();
+      if (!Number.isNaN(num) && body) {
+        const lower = body.toLowerCase();
+        pages.push({
+          num,
+          lower,
+          compact: lower.replace(/[^a-z0-9]/g, ""),
+        });
+      }
+    }
+    if (!pages.length && rawText) {
+      const lower = rawText.toLowerCase();
+      pages.push({ num: 1, lower, compact: lower.replace(/[^a-z0-9]/g, "") });
+    }
+    return pages;
+  }
+
+  function classifySpec(entry, pages) {
+    const numberCompact = (entry.number || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const titleLower = (entry.title || "").toLowerCase();
+    const matches = pages.filter(
+      (p) =>
+        (numberCompact && p.compact.includes(numberCompact)) ||
+        (titleLower && p.lower.includes(titleLower))
+    );
+
+    if (!matches.length) {
+      return { entry, status: "missing", note: "Not found in recognized text." };
+    }
+    const foundPage = matches[0]?.num || 1;
+
+    const dateRaw = (entry.currentDate || "").trim();
+    if (!dateRaw) {
+      return {
+        entry,
+        status: "ok",
+        note: `Found in text on page ${foundPage} (no date on record).`,
+      };
+    }
+    const { display, variants } = normalizeDateVariants(dateRaw);
+    let datePage = null;
+    matches.some((p) => {
+      const hit = variants.some((v) => v && p.compact.includes(v));
+      if (hit) {
+        datePage = p.num;
+        return true;
+      }
+      return false;
+    });
+    if (!datePage) {
+      const anyPage = pages.find((p) => variants.some((v) => v && p.compact.includes(v)));
+      if (anyPage) datePage = anyPage.num;
+    }
+
+    if (datePage) {
+      return {
+        entry,
+        status: "ok",
+        note: `Found with date (${display || dateRaw}) on page ${datePage}.`,
+      };
+    }
+    return {
+      entry,
+      status: "warn",
+      note: `Found on page ${foundPage}, but date (${display || dateRaw}) not detected.`,
+    };
+  }
+
+  async function getNativePdfText() {
+    if (!viewer.pdfBytes || !pdfjsLib) return "";
+    try {
+      const pdf = await pdfjsLib.getDocument({ data: viewer.pdfBytes }).promise;
+      const parts = [];
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum += 1) {
+        const page = await pdf.getPage(pageNum);
+        const content = await page.getTextContent();
+        const text = content.items.map((it) => it.str || "").join(" ");
+        parts.push(`\n\n===== Page ${pageNum} =====\n\n${text}`);
+      }
+      return parts.join("\n");
+    } catch (err) {
+      console.error("Native PDF text extraction failed", err);
+      return "";
+    }
+  }
+
+  async function getPageText(pageNum) {
+    if (viewer.pageTexts.has(pageNum)) return viewer.pageTexts.get(pageNum);
+    if (!viewer.pdf) return "";
+    const page = await viewer.pdf.getPage(pageNum);
+    const content = await page.getTextContent();
+    const text = content.items.map((it) => it.str || "").join(" ");
+    viewer.pageTexts.set(pageNum, text);
+    return text;
+  }
+
+  async function runSpecCheck() {
+    if (!els.output || !els.specResults || !els.specStatus) return;
+    if (!specListState.entries.length) {
+      els.specStatus.className = "sssp-status warn";
+      els.specStatus.textContent = "Spec list failed to load. Ensure data/WhereandWhenList.csv is accessible.";
+      els.specResults.innerHTML = "";
+      return;
+    }
+    let text = (els.output.value || "").trim();
+    if (!text && viewer.pdfBytes) {
+      els.specStatus.className = "sssp-status";
+      els.specStatus.textContent = "No OCR text yet. Trying direct PDF text (no OCR)...";
+      text = (await getNativePdfText()).trim();
+      if (!els.output.value && text) {
+        els.output.value = text;
+      }
+    }
+    if (!text) {
+      els.specStatus.className = "sssp-status";
+      els.specStatus.textContent = "No text available. Run OCR or select a PDF first.";
+      els.specResults.innerHTML = "";
+      return;
+    }
+    const textLower = text.toLowerCase();
+    const pages = parsePages(text);
+    const userEntries = parseUserSpecList();
+    const targets =
+      userEntries.length > 0
+        ? userEntries.map((ue) => {
+            const match =
+              specListState.byKey[ue.title.toLowerCase()] ||
+              specListState.byKey[ue.number.toLowerCase()] ||
+              specListState.entries.find(
+                (e) =>
+                  e.title.toLowerCase() === ue.title.toLowerCase() ||
+                  e.number.toLowerCase() === ue.number.toLowerCase()
+              );
+            if (!match) {
+              return { ...ue, currentDate: "", category: "Unknown", notInCsv: true };
+            }
+            return match;
+          })
+        : specListState.entries;
+
+    const results = targets.map((entry) => classifySpec(entry, pages));
+
+    const missingCount = results.filter((r) => r.status === "missing").length;
+    const warnCount = results.filter((r) => r.status === "warn").length;
+    const unknownCount = results.filter((r) => r.entry.notInCsv).length;
+
+    const statusClass =
+      missingCount === 0 && warnCount === 0
+        ? "sssp-status ok"
+        : warnCount || missingCount
+        ? "sssp-status warn"
+        : "sssp-status";
+    const summaryParts = [];
+    summaryParts.push(`Checked ${results.length} SS/SP entries.`);
+    if (missingCount) summaryParts.push(`${missingCount} missing.`);
+    if (warnCount) summaryParts.push(`${warnCount} need date verification.`);
+    if (unknownCount) summaryParts.push(`${unknownCount} not in Where/When list.`);
+    if (!missingCount && !warnCount && !unknownCount)
+      summaryParts.push("All found; dates verified.");
+
+    els.specStatus.className = statusClass;
+    els.specStatus.textContent = summaryParts.join(" ");
+
+    els.specResults.innerHTML = "";
+    results.forEach((res) => {
+      const wrap = document.createElement("div");
+      wrap.className = "sssp-item";
+
+      const header = document.createElement("div");
+      header.className = "sssp-item-header";
+
+      const title = document.createElement("h5");
+      title.className = "sssp-title";
+      title.textContent = `${res.entry.title || "Untitled"} (${res.entry.number || "No number"})`;
+
+      const pill = document.createElement("span");
+      const pillClass =
+        res.status === "ok"
+          ? "ok"
+          : res.status === "warn"
+          ? "warn"
+          : res.status === "missing"
+          ? "warn"
+          : "info";
+      const pillLabel =
+        res.status === "ok"
+          ? "Current"
+          : res.status === "warn"
+          ? "Date missing"
+          : res.status === "missing"
+          ? "Not found"
+          : "Found";
+      pill.className = `sssp-pill ${pillClass}`;
+      pill.textContent = pillLabel;
+
+      const meta = document.createElement("div");
+      meta.className = "sssp-meta";
+      const cat = res.entry.category ? `${res.entry.category}` : "";
+      const date = res.entry.currentDate ? `Current date: ${res.entry.currentDate}` : "";
+      meta.textContent = [cat, date].filter(Boolean).join(" | ");
+
+      const note = document.createElement("div");
+      note.className = "sssp-note";
+      note.textContent = res.note;
+
+      header.appendChild(title);
+      header.appendChild(pill);
+      wrap.appendChild(header);
+      if (meta.textContent) wrap.appendChild(meta);
+      wrap.appendChild(note);
+      els.specResults.appendChild(wrap);
+    });
+  }
+
+  function clearSpecResults() {
+    if (els.specResults) els.specResults.innerHTML = "";
+    if (els.specStatus) {
+      els.specStatus.className = "sssp-status";
+      els.specStatus.textContent = "Load a PDF and run OCR to enable the check.";
+    }
   }
 
   function syncPageControls() {
@@ -1214,6 +1554,8 @@ function initProposalChecker() {
     els.log.textContent = "";
     els.output.value = "";
     enableOutputActions(false);
+    clearSpecResults();
+    updateSpecButtonState();
     cancelOcrRequested = false;
 
     if (!file) {
@@ -1247,6 +1589,8 @@ function initProposalChecker() {
     const file = els.pdfFile.files?.[0];
     setProgress(0, file ? `Selected: ${file.name}` : "No file selected.");
     enableOutputActions(false);
+    clearSpecResults();
+    updateSpecButtonState();
   });
 
   els.copyBtn.addEventListener("click", async () => {
@@ -1271,6 +1615,48 @@ function initProposalChecker() {
     URL.revokeObjectURL(url);
     addLog("Downloaded ocr-output.txt");
   });
+
+  if (els.copyPageText) {
+    els.copyPageText.addEventListener("click", async () => {
+      if (!viewer.pdf) return;
+      try {
+        const text = await getPageText(viewer.pageNum);
+        await navigator.clipboard.writeText(text || "");
+        addLog(`Copied text for page ${viewer.pageNum}.`);
+      } catch (err) {
+        addLog("Copy failed. Your browser may block clipboard access.");
+      }
+    });
+  }
+
+  if (els.textSelectToggle) {
+    els.textSelectToggle.addEventListener("click", async () => {
+      setTextSelectMode(!viewer.textSelectMode);
+      await renderPage(viewer.pageNum);
+    });
+  }
+
+  if (els.output) {
+    els.output.addEventListener("input", updateSpecButtonState);
+  }
+
+  if (els.specRun) {
+    els.specRun.addEventListener("click", async () => {
+      await runSpecCheck();
+      updateSpecButtonState();
+    });
+  }
+
+  if (els.specClear) {
+    els.specClear.addEventListener("click", () => {
+      clearSpecResults();
+      updateSpecButtonState();
+    });
+  }
+
+  if (els.specInput) {
+    els.specInput.addEventListener("input", updateSpecButtonState);
+  }
 
   // OCR controls
   els.cancelBtn.addEventListener("click", () => {
@@ -1413,6 +1799,7 @@ function initProposalChecker() {
     viewer.pdf = await pdfjsLib.getDocument({ url: viewer.pdfUrl }).promise;
     viewer.pageCount = viewer.pdf.numPages;
     viewer.pageNum = 1;
+    viewer.pageTexts.clear();
 
     viewer.pdfCtx = els.pdfCanvas.getContext("2d");
     viewer.markupCtx = els.markupCanvas.getContext("2d");
@@ -1420,6 +1807,7 @@ function initProposalChecker() {
     syncPageControls();
     setViewerEnabled(true);
     setActiveTool("pen");
+    updateSpecButtonState();
     await renderPage(viewer.pageNum);
   }
 
@@ -1440,6 +1828,38 @@ function initProposalChecker() {
     viewer.markupCtx.clearRect(0, 0, els.markupCanvas.width, els.markupCanvas.height);
     const saved = viewer.markupByPage.get(pageNum);
     if (saved) await drawMarkupDataUrl(saved);
+
+    // Populate page text box for selection/copy
+    if (els.pageTextBox) {
+      try {
+        const text = await getPageText(pageNum);
+        els.pageTextBox.value = text || "";
+        els.pageTextBox.placeholder = text ? "" : "No text found for this page.";
+      } catch (err) {
+        els.pageTextBox.value = "";
+        els.pageTextBox.placeholder = "Unable to extract text for this page.";
+      }
+    }
+
+    // Render text layer for on-canvas selection
+    if (els.textLayer) {
+      els.textLayer.innerHTML = "";
+      els.textLayer.style.width = `${Math.floor(viewport.width)}px`;
+      els.textLayer.style.height = `${Math.floor(viewport.height)}px`;
+      if (viewer.textSelectMode) {
+        try {
+          const textContent = await page.getTextContent();
+          pdfjsLib.renderTextLayer({
+            textContent,
+            container: els.textLayer,
+            viewport,
+            textDivs: [],
+          });
+        } catch (err) {
+          console.error("Render text layer failed", err);
+        }
+      }
+    }
   }
 
   async function saveCurrentMarkup() {
@@ -1725,6 +2145,8 @@ function initProposalChecker() {
       } else {
         setProgress(100, "OCR complete.");
         addLog("OCR completed.");
+        await runSpecCheck();
+        updateSpecButtonState();
       }
     } finally {
       await worker.terminate();
@@ -1737,6 +2159,8 @@ function initProposalChecker() {
   setViewerEnabled(false);
   setActiveTool("pen");
   setZoom(1);
+  updateSpecButtonState();
+  setTextSelectMode(false);
 }
 document.addEventListener("DOMContentLoaded", () => {
   // Default review date to today if empty
@@ -1854,4 +2278,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Start proposal checker module
   initProposalChecker();
+  loadSpecListCsv();
 });

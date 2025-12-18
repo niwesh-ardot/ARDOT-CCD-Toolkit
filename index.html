@@ -304,17 +304,38 @@
                   ></textarea>
                   <div class="ocr-hint">Tip: If OCR misses characters, try a higher render scale or a clearer scan.</div>
                 </div>
+
+                <div class="ocr-panel">
+                  <div class="ocr-panel-header">
+                    <h4>SS/SP Revision Checker</h4>
+                    <div class="ocr-actions">
+                      <button id="ssspRun" class="btn-primary" disabled>Check text</button>
+                      <button id="ssspClear" class="btn-ghost">Clear</button>
+                    </div>
+                  </div>
+                  <p class="sssp-help">
+                    Paste SS/SP numbers or titles you expect (one per line) or leave empty to check the full Where and When list. Dates are pulled from the master list and verified against the PDF text.
+                  </p>
+                  <textarea
+                    id="ssspInput"
+                    class="sssp-input"
+                    rows="5"
+                    placeholder="Examples (optional):\nFHWA-1273\nERRATA\nMANDATORY ELECTRONIC CONTRACT"
+                  ></textarea>
+                  <div id="ssspStatus" class="sssp-status">Load a PDF and run OCR to enable the check.</div>
+                  <div id="ssspResults" class="sssp-list"></div>
+                </div>
               </div>
 
               <div class="ocr-col">
                 <div class="ocr-panel">
                     <div class="ocr-panel-header">
                       <h4>PDF Viewer &amp; Markup</h4>
-                      <div class="viewer-controls">
-                        <button id="ocrPrevPage" class="btn-ghost" disabled>Prev</button>
-                        <div class="viewer-page">Page <span id="ocrPageNum">0</span> / <span id="ocrPageCount">0</span></div>
-                        <div class="viewer-jump">
-                          <input id="ocrPageInput" type="number" min="1" value="1" disabled aria-label="Go to page" />
+                    <div class="viewer-controls">
+                      <button id="ocrPrevPage" class="btn-ghost" disabled>Prev</button>
+                      <div class="viewer-page">Page <span id="ocrPageNum">0</span> / <span id="ocrPageCount">0</span></div>
+                      <div class="viewer-jump">
+                        <input id="ocrPageInput" type="number" min="1" value="1" disabled aria-label="Go to page" />
                           <span class="viewer-jump-label">Go</span>
                         </div>
                         <button id="ocrNextPage" class="btn-ghost" disabled>Next</button>
@@ -358,6 +379,8 @@
                       <button id="ocrMarkAll" class="btn-ghost" disabled>Mark all pages</button>
                       <button id="ocrUnmarkAll" class="btn-ghost" disabled>Remove mark all pages</button>
                       <button id="ocrClearMarkup" class="btn-ghost" disabled>Clear markup</button>
+                      <button id="ocrTextSelectToggle" class="btn-ghost" disabled>Select text</button>
+                      <button id="ocrCopyPageText" class="btn-ghost" disabled>Copy page text</button>
                     </div>
                     <button id="ocrExportPdf" class="btn-primary" disabled>Export marked PDF</button>
                   </div>
@@ -366,7 +389,12 @@
                     <div class="canvas-stack">
                       <canvas id="ocrPdfCanvas"></canvas>
                       <canvas id="ocrMarkupCanvas"></canvas>
+                      <div id="ocrTextLayer" class="ocr-text-layer"></div>
                     </div>
+                  </div>
+                  <div class="page-text-panel">
+                    <label for="ocrPageText">Page text (select &amp; copy)</label>
+                    <textarea id="ocrPageText" readonly placeholder="Select a PDF to load page text."></textarea>
                   </div>
 
                   <div class="stamp-row">
