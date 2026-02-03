@@ -115,7 +115,7 @@ const CHECKLIST_SECTIONS = [
       },
       {
         id: "cl-bidders-list",
-        label: "Bidders List (Job no., name, letting date 4/24/2024).",
+        label: "Bidders List (Job no., name, letting date 10/1/2025).",
       },
     ],
   },
