@@ -18,7 +18,7 @@ const CHECKLIST_SECTIONS = [
       },
       {
         id: "cov-nondiscrimination",
-        label: "Notice of Nondiscrimination (Rev. 8/4/2025).",
+        label: "Notice of Nondiscrimination (Rev. 12/18/2025).",
       },
       {
         id: "cov-title-vi",
