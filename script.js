@@ -114,6 +114,11 @@ const CHECKLIST_SECTIONS = [
           'Certification for Federal-aid Contracts and "Have/Have Not" certification (11/17/2017).',
       },
       {
+        id: "cl-fed-Foreign-Aircraft",
+        label:
+          'Use of Foreign Unmanned Aircraft Systems (2/13/2026).',
+      },
+      {
         id: "cl-bidders-list",
         label: "Bidders List (Job no., name, letting date 10/1/2025).",
       },
@@ -209,6 +214,7 @@ const STATE_EXCLUDE_ITEM_IDS = new Set([
   "cov-title-vi",
   "npdes-dbe-goal",
   "cl-fed-aid-certs",
+  "cl-fed-Foreign-Aircraft",
   "cl-bidders-list",
   "supp-dbe-goals",
 ]);
