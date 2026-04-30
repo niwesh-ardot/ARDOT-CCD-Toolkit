@@ -116,7 +116,7 @@ const CHECKLIST_SECTIONS = [
       {
         id: "cl-fed-Foreign-Aircraft",
         label:
-          'Use of Foreign Unmanned Aircraft Systems (2/13/2026).',
+          'Use of Foreign Unmanned Aircraft Systems (3/12/2026).',
       },
       {
         id: "cl-bidders-list",
