@@ -174,7 +174,7 @@ const CHECKLIST_SECTIONS = [
     items: [
       {
         id: "fed-fhwa-1273",
-        label: "FHWA-1273 (14 pages, 10/23/2023).",
+        label: "FHWA-1273 (12 pages, 06/25/2026).",
       },
       {
         id: "fed-eeo-notice",
