@@ -1,21 +1,30 @@
-Call No.,Job No.,District,County(ies),FAP No.,Job Name,Route / Section,APHN,Estimate,Month
-010,110812,1,Phillips,"NHPP, PROTECT & HIPBIP",Hwy. 49 Mississippi River Bridge Rehab. (S),49,Y,"$77,824,000 ",November
-012,A10059,1,Phillips,STBGP & Act 416,Hwy. 49 – Hwy. 44 (S),85,N,"$3,092,000 ",November
-014,A20044,2,Arkansas,STBGP & Act 416,Hwy. 165 – Hwy. 152 (S),130,N,"$9,597,000 ",November
-016,A30049,3,Hempstead & Howard,STBGP & Act 416,Hwy. 355 – Hwy. 278 (S),73,N,"$8,656,000 ",November
-020,040904,4,Crawford,NHPP & Earmark,Clear Creek Rd. – I-40 (Phase 1) (F),I-49,Y,"$154,675,000 ",November
-030,A40062,4,Polk,STBGP & Act 416,Hwy. 8 – South (S),375,N,"$4,257,000 ",November
-040,050439,5,Independence,NHPP,Hwy. 25 Str. & Apprs. (Independence Co.) (S),25,Y,"$5,301,000 ",November
-050,A50033,5,White,STBGP & Act 416,Hwy. 67B – Hwy. 13 (S),367,Y,"$1,862,000 ",November
-060,A50052,5,Independence,STBGP & Act 416,Stone Co. Line – Hwy. 25 (S),14,Y,"$2,111,000 ",November
-070,061922,6,Garland,Safety,Hwys. 7 & 70B Ped. Impvts. (Garland Co.) (S),7 & 70,Y,"$4,084,000 ",November
-080,A60066,6,Pulaski,STBGP & Act 416,Hwy. 367 – Hwy. 365 (S),338,Y,"$4,164,000 ",November
-090,A70049,7,Calhoun,NHPP & Act 416,Ouachita River – North (S),167,Y,"$2,159,000 ",November
-100,A70050,7,Clark,STBGP & Act 416,Hwy. 67 – Hwy. 51 (S),182,N,"$6,344,000 ",November
-110,A80050,8,Van Buren,NHPP & Act 416,Hwy. 95 – Hwy. 124 (S),65,Y,"$6,187,000 ",November
-120,A90050,9,Baxter,STBGP & Act 416,Missouri State Line – Hwy. 62 (S),101,N,"$3,362,000 ",November
-130,A90051,9,Carroll,NHPP & Act 416,Hwy. 412 Impvts. (Carroll Co.) (S),412,Y,"$5,109,000 ",November
-140,101141,10,Mississippi,STBGP & Local,Hwys. 61/140 Inters. Impvts. (Osceola) (S),61 & 140,Y,"$2,988,000 ",November
-150,A00103,10,Craighead,NHPP & Act 416,Monette – Mississippi Co. Line (S),18,Y,"$1,344,000 ",November
-160,BR4401,9,Madison,STBGP & State Aid,War Eagle Creek Str. & Apprs. (S),7,-,"$5,236,000 ",November
-170,FA0314,9,Baxter,STBGP & State Aid,Hwy. 341 Southeast – Stone Co. Line (Phase 2) (S),CR 73,-,"$3,769,000 ",November
+Call No.,Job No.,District,County(ies),FAP No.,Job Name,Route / Section,APHN,Estimate
+005,110614,1,Crittenden,CMAQ,I-55 - Hwy. 77 (Marion) (S),64,Y," $2,200,000 "
+10,110812,1,Phillips,"NHPP, PROTECT & BIP",Hwy. 49 Mississippi River Bridge Rehab. (S),49,Y," $77,840,000 "
+,A10058,1,Phillips,NHPP & Act 416,Monroe Co. Line - Co. Rd. 625 (S),49,Y," $2,400,000 "
+,A10060,1,Crittenden,NHPP & Act 416,I-40 - Hwy. 147 (S),218,Y," $2,200,000 "
+,A20042,2,Grant,"STBGP, Safety & Act 416",Saline Co. Line - Hwy. 167B (S),35,Y," $6,500,000 "
+50,A20043,2,Chicot,NHPP & Act 416,Hwy. 82 - Louisiana St. Line (Sel. Secs.) (S),65,Y," $9,100,000 "
+,A30048,3,Sevier,STBGP & Act 416,Hwy. 71 - Howard Co. Line (S),27,Y," $4,300,000 "
+,A30051,3,Miller,STBGP & Act 416,Hwy. 71 - Co. Rd. 28 (S),237,Y," $3,100,000 "
+,040788,4,Crawford & Franklin,NHPP,Hwy. 64 Strs. & Apprs. (Mulberry) (S),64,Y," $17,000,000 "
+,A40061,4,Scott,STBGP & Act 416,Oklahoma State Line - Hwy. 71 (S),28,N," $9,200,000 "
+100,A50051,5,Fulton,STBGP & Act 416,Hwy. 62 - Hwy. 395 (Salem) (S),9,Y," $800,000 "
+,A50053,5,Independence,"STBGP, Safety & Act 416",Hwy. 167 - Hwy. 122 (S),14,N," $7,400,000 "
+,A50056,5,Fulton & Sharp,STBGP & Act 416,Hwys. 175 & 175S Impvts. (Cherokee Village) (S),175,N," $3,800,000 "
+,A60064,6,Lonoke,STBGP & Act 416,Jefferson Co. Line - I-40 (S),13,Y," $11,800,000 "
+,A70046,7,Clark,STBGP & Act 416,Pike Co. Line - Hwy. 53 (S),8,Y," $7,200,000 "
+150,A90052,9,Benton,STBGP & Act 416,Hwy. 102B - S. Walton Blvd. (S),102,Y," $6,600,000 "
+,101177,10,Craighead & Poinsett,NHPP,Hwy. 135 Strs. & Apprs. (S),135,Y," $22,613,000 "
+,A00104,10,Craighead & Greene,NHPP & Act 416,Hwy. 49 Impvts. (Craighead & Greene Cos.) (S),49,Y," $5,700,000 "
+,012515,Var,"Grant, Pulaski & Saline",NHPP,South Terminal - Grant Co. Line (S),I-530,Y," $15,700,000 "
+,012584,Var,Various,,"Districts 1, 5 & 10 Raised Pavement Markers (2027) (S)",Various,Y,
+200,012585,Var,Various,,"Districts 2, 3 & 7 Raised Pavement Markers (2027) (S)",Various,Y,
+,012586,Var,Various,,Districts 4 & 9 Raised Pavement Markers (2027) (S),Various,Y,
+,012587,Var,Various,,Districts 6 & 8 Raised Pavement Markers (2027) (S),Various,Y,
+230,C38017,10,Lawrence,City Aid,Powhatan & Walnut Ridge Overlay & Surfacing (S),Various,-," $700,000 "
+240,C54006,1,Phillips,City Aid,Lexa Overlay & Surfacing (S),Various,-," $368,000 "
+250,C61009,10,Randolph,City Aid,Biggers & Maynard Overlay & Surfacing (S),Various,-," $601,000 "
+260,C65019,4,Sebastian,City Aid,Huntington Overlay (S),Various,-," $404,000 "
+270,C69005,5,Stone,City Aid,Fifty-Six & Mountain View Overlay & Surfacing (S),Various,-," $734,000 "
+,,,,,,,,
