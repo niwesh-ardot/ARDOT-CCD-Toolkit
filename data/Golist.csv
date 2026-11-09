@@ -1,30 +1,58 @@
 Call No.,Job No.,District,County(ies),FAP No.,Job Name,Route / Section,APHN,Estimate
-005,110614,1,Crittenden,CMAQ,I-55 - Hwy. 77 (Marion) (S),64,Y," $2,200,000 "
-10,110812,1,Phillips,"NHPP, PROTECT & BIP",Hwy. 49 Mississippi River Bridge Rehab. (S),49,Y," $77,840,000 "
-,A10058,1,Phillips,NHPP & Act 416,Monroe Co. Line - Co. Rd. 625 (S),49,Y," $2,400,000 "
-,A10060,1,Crittenden,NHPP & Act 416,I-40 - Hwy. 147 (S),218,Y," $2,200,000 "
-,A20042,2,Grant,"STBGP, Safety & Act 416",Saline Co. Line - Hwy. 167B (S),35,Y," $6,500,000 "
-50,A20043,2,Chicot,NHPP & Act 416,Hwy. 82 - Louisiana St. Line (Sel. Secs.) (S),65,Y," $9,100,000 "
-,A30048,3,Sevier,STBGP & Act 416,Hwy. 71 - Howard Co. Line (S),27,Y," $4,300,000 "
-,A30051,3,Miller,STBGP & Act 416,Hwy. 71 - Co. Rd. 28 (S),237,Y," $3,100,000 "
-,040788,4,Crawford & Franklin,NHPP,Hwy. 64 Strs. & Apprs. (Mulberry) (S),64,Y," $17,000,000 "
-,A40061,4,Scott,STBGP & Act 416,Oklahoma State Line - Hwy. 71 (S),28,N," $9,200,000 "
-100,A50051,5,Fulton,STBGP & Act 416,Hwy. 62 - Hwy. 395 (Salem) (S),9,Y," $800,000 "
-,A50053,5,Independence,"STBGP, Safety & Act 416",Hwy. 167 - Hwy. 122 (S),14,N," $7,400,000 "
-,A50056,5,Fulton & Sharp,STBGP & Act 416,Hwys. 175 & 175S Impvts. (Cherokee Village) (S),175,N," $3,800,000 "
-,A60064,6,Lonoke,STBGP & Act 416,Jefferson Co. Line - I-40 (S),13,Y," $11,800,000 "
-,A70046,7,Clark,STBGP & Act 416,Pike Co. Line - Hwy. 53 (S),8,Y," $7,200,000 "
-150,A90052,9,Benton,STBGP & Act 416,Hwy. 102B - S. Walton Blvd. (S),102,Y," $6,600,000 "
-,101177,10,Craighead & Poinsett,NHPP,Hwy. 135 Strs. & Apprs. (S),135,Y," $22,613,000 "
-,A00104,10,Craighead & Greene,NHPP & Act 416,Hwy. 49 Impvts. (Craighead & Greene Cos.) (S),49,Y," $5,700,000 "
-,012515,Var,"Grant, Pulaski & Saline",NHPP,South Terminal - Grant Co. Line (S),I-530,Y," $15,700,000 "
-,012584,Var,Various,,"Districts 1, 5 & 10 Raised Pavement Markers (2027) (S)",Various,Y,
+005,110614,1,Crittenden,CMAQ,I-55 - Hwy. 77 (Marion) (S),64,Y,"$2,200,000"
+010,110812,1,Phillips,"NHPP, PROTECT & BIP",Hwy. 49 Mississippi River Bridge Rehab. (F),49,Y,"$77,840,000"
+020,A10058,1,Phillips,NHPP & Act 416,Monroe Co. Line - Co. Rd. 625 (S),49,Y,"$2,400,000"
+030,A10060,1,Crittenden,NHPP & Act 416,I-40 - Hwy. 147 (S),218,Y,"$2,200,000"
+040,A20042,2,Grant,"STBGP, Safety & Act 416",Saline Co. Line - Hwy. 167B (S),35,Y,"$6,500,000"
+050,A20043,2,Chicot,NHPP & Act 416,Hwy. 82 - Louisiana St. Line (Sel. Secs.) (S),65,Y,"$9,100,000"
+060,A30048,3,Sevier,STBGP & Act 416,Hwy. 71 - Howard Co. Line (S),27,Y,"$4,300,000"
+070,A30051,3,Miller,STBGP & Act 416,Hwy. 71 - Co. Rd. 28 (S),237,Y,"$3,100,000"
+080,040788,4,Crawford & Franklin,NHPP,Hwy. 64 Strs. & Apprs. (Mulberry) (S),64,Y,"$17,000,000"
+090,A40061,4,Scott,STBGP & Act 416,Oklahoma State Line - Hwy. 71 (S),28,N,"$9,200,000"
+100,A50051,5,Fulton,STBGP & Act 416,Hwy. 62 - Hwy. 395 (Salem) (S),9,Y,"$800,000"
+110,A50053,5,Independence,"STBGP, Safety & Act 416",Hwy. 167 - Hwy. 122 (S),14,N,"$7,400,000"
+120,A50056,5,Fulton & Sharp,STBGP & Act 416,Hwys. 175 & 175S Impvts. (Cherokee Village) (S),175,N,"$3,800,000"
+130,A60064,6,Lonoke,STBGP & Act 416,Jefferson Co. Line - I-40 (S),13,Y,"$11,800,000"
+140,A70046,7,Clark,STBGP & Act 416,Pike Co. Line - Hwy. 53 (S),8,Y,"$7,200,000"
+150,A90052,9,Benton,STBGP & Act 416,Hwy. 102B - S. Walton Blvd. (S),102,Y,"$6,600,000"
+160,101177,10,Craighead & Poinsett,NHPP,Hwy. 135 Strs. & Apprs. (S),135,Y,"$22,613,000"
+170,A00104,10,Craighead & Greene,NHPP & Act 416,Hwy. 49 Impvts. (Craighead & Greene Cos.) (S),49,Y,"$5,700,000"
+180,012515,Var,"Grant, Pulaski & Saline",NHPP,South Terminal - Grant Co. Line (S),I-530,Y,"$15,700,000"
+190,012584,Var,Various,,"Districts 1, 5 & 10 Raised Pavement Markers (2027) (S)",Various,Y,
 200,012585,Var,Various,,"Districts 2, 3 & 7 Raised Pavement Markers (2027) (S)",Various,Y,
-,012586,Var,Various,,Districts 4 & 9 Raised Pavement Markers (2027) (S),Various,Y,
-,012587,Var,Various,,Districts 6 & 8 Raised Pavement Markers (2027) (S),Various,Y,
-230,C38017,10,Lawrence,City Aid,Powhatan & Walnut Ridge Overlay & Surfacing (S),Various,-," $700,000 "
-240,C54006,1,Phillips,City Aid,Lexa Overlay & Surfacing (S),Various,-," $368,000 "
-250,C61009,10,Randolph,City Aid,Biggers & Maynard Overlay & Surfacing (S),Various,-," $601,000 "
-260,C65019,4,Sebastian,City Aid,Huntington Overlay (S),Various,-," $404,000 "
-270,C69005,5,Stone,City Aid,Fifty-Six & Mountain View Overlay & Surfacing (S),Various,-," $734,000 "
-,,,,,,,,
+202,012586,Var,Various,,Districts 4 & 9 Raised Pavement Markers (2027) (S),Various,Y,
+204,012587,Var,Various,,Districts 6 & 8 Raised Pavement Markers (2027) (S),Various,Y,
+206,BR4907,8,Montgomery,BR-OFF,Caney Creek Str. & Apprs. (S),Kennedy Rd.,-,
+208,C03012,9,Baxter,City Aid,Big Flat Surfacing (S),Various,-,"$189,000"
+210,C03013,9,Baxter,City Aid,Cotter & Gassville Overlay (S),Various,-,"$693,000"
+215,C05012,9,Boone,City Aid,Harrison & Lead Hill Overlay & Surfacing (S),Various,-,
+220,C08013,9,Carroll,City Aid,Woodsdale & Stateline Dr. (Holiday Island) Overlay (S),Woodsdale Dr. & Stateline Dr.,-,"$343,000"
+222,C12010,5,Cleburne,City Aid,Higden Overlay & Surfacing (S),Various,-,
+223,C16015,10,Craighead,City Aid,Bay Overlay & Surfacing (S),Various,-,
+224,C17014,4,Crawford  ,City Aid,Mulberry & Van Buren Overlay (S),Various,-,
+225,C18019,1,Crittenden,City Aid,Edmondson E. Fleming St. Extension (S),E. Fleming St.,-,
+227,C23011,8,Faulkner,City Aid,Conway & Mayflower Overlay (S),Various,-,"$927,000"
+229,C28009,10,Greene,City Aid,Oak Grove Heights Overlay & Surfacing (S),Various,-,"$366,000"
+230,C38017,10,Lawrence,City Aid,Powhatan & Walnut Ridge Overlay & Surfacing (S),Various,-,"$700,000"
+233,C42008,8,Logan ,City Aid,Paris & Subiaco Overlay (S),Various,-,
+236,C47023,10,Mississippi,City Aid,Etowah & Osceola Overlay & Surfacing (S),Various,-,"$792,000"
+240,C54006,1,Phillips,City Aid,Lexa Overlay & Surfacing (S),Various,-,"$372,000"
+243,C56010,10,Poinsett,City Aid,Marked Tree & Tyronza Overlay (S),Various,-,"$651,000"
+246,C58009,8,Pope,City Aid,Dover & Hector Overlay (S),Various,-,"$739,000"
+250,C61009,10,Randolph,City Aid,Biggers & Maynard Overlay & Surfacing (S),Various,-,"$601,000"
+260,C65019,4,Sebastian,City Aid,Huntington Overlay (S),Various,-,"$404,000"
+270,C69005,5,Stone,City Aid,Fifty-Six & Mountain View Overlay & Surfacing (S),Various,-,"$734,000"
+280,C70011,7,Union,City Aid,Felsenthal Overlay & Surfacing (S),Various,-,"$388,000"
+283,C72016,4,Washington,City Aid,Farmington & Goshen Overlay (S),Various,-,"$914,000"
+286,C72017,4,Washington,City Aid,"Prairie Grove, West Fork & Winslow Overlay (S)",Various,-,"$1,023,000"
+290,C73019,5,White,City Aid,McRae Overlay (S),Various,-,"$445,000"
+300,C73020,5,White,City Aid,Russell Overlay (S),Various,-,"$293,000"
+305,C75008,8,Yell,City Aid,Danville & Dardanelle Overlay (S),Various,-,
+310,C76097,3,Hempstead & Pike,City Aid,"Blevins, McCaskill & Murfreesboro Overlay & Surfacing (S)",Various,-,"$1,184,000"
+320,C76099,1,Crittenden & Cross,City Aid,Marion & Parkin Overlay (S),Various,-,
+330,C76101,4,Franklin & Sebastian,City Aid,Charleston & Lavaca Overlay & Surfacing (S),Various,-,
+340,C76102,8,Conway & Perry,City Aid,"Bigelow, Fourche & Morrilton Overlay & Surfacing (S)",Various,-,"$730,000"
+350,C76103,3 & 7,Columbia & Lafayette,City Aid,"McNeil, Stamps & Waldo Overlay & Surfacing (S)",Various,-,
+360,C76104,8,Conway & Perry,City Aid,Oppelo & Perryville Overlay & Surfacing (S),Various,-,"$789,000"
+370,SA6147,10,Randolph,State Aid,Hwy. 166 - East (Overlay) (S),Osterkamp Rd.,-,"$277,000"
+380,SA6741,5,Sharp,State Aid,Strawberry River Rd. Surfacing (S),Strawberry River Rd.,-,"$869,000"
