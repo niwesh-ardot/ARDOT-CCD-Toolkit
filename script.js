@@ -1,4 +1,4 @@
-﻿// ==============================
+// ==============================
 // Checklist data (same as before)
 // ==============================
 const CHECKLIST_SECTIONS = [
@@ -137,7 +137,7 @@ const CHECKLIST_SECTIONS = [
       {
         id: "npdes-cert",
         label:
-          "NPDES Certification: If the Storm Water Pollution Prevention Plan SP was included, check the Job Number on Contractorâ€™s Certification Statement.",
+          "NPDES Certification: If the Storm Water Pollution Prevention Plan SP was included, check the Job Number on Contractor's Certification Statement.",
       },
     ],
   },
@@ -735,369 +735,239 @@ function handleJsonFile(file) {
   reader.readAsText(file);
 }
 
-// Cache for logo data URL (for PDF)
-let cachedLogoDataUrl = null;
+// Embedded logo works when the application is opened directly from disk.
 async function loadLogoAsDataUrl() {
-  if (cachedLogoDataUrl) return cachedLogoDataUrl;
-  return new Promise((resolve) => {
-    const tryPaths = ["assets/ardot-logo.png", "assets/ardot-logo.svg"];
-    let index = 0;
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const w = img.naturalWidth || 180;
-      const h = img.naturalHeight || 56;
-      const canvas = document.createElement("canvas");
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, w, h);
-      cachedLogoDataUrl = canvas.toDataURL("image/png");
-      resolve(cachedLogoDataUrl);
-    };
-    img.onerror = () => {
-      index += 1;
-      if (index < tryPaths.length) {
-        img.src = tryPaths[index];
-      } else {
-        resolve(null);
-      }
-    };
-    img.src = tryPaths[index];
-  });
+  return window.CCD_PDF_LOGO || null;
 }
 
 // ==============================
 // PDF export (summary style)
 // ==============================
 async function exportPdf() {
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    alert("PDF library not loaded.");
+  if (!window.jspdf?.jsPDF) {
+    alert("PDF library not loaded. Please check your internet connection and reload.");
     return;
   }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "pt", format: "letter" });
-
+  // Embed fonts to preserve spacing across PDF viewers and printers.
+  const pdfFonts = window.CCD_PDF_FONTS || [];
+  pdfFonts.forEach(({ style, data }) => {
+    const name = `LiberationSans-${style}.ttf`;
+    doc.addFileToVFS(name, data);
+    doc.addFont(name, "CCD", style);
+  });
+  const pdfFont = pdfFonts.length ? "CCD" : "helvetica";
   const meta = collectMetaFromDom();
-  const isStateFunded = !!meta.stateFunded;
-
-  const filteredSections = CHECKLIST_SECTIONS.map((sec) => {
-    if (isStateFunded && sec.id === "federal-reqs") return null;
-    const items = (sec.items || []).filter((item) => {
-      if (isStateFunded && STATE_EXCLUDE_ITEM_IDS.has(item.id)) return false;
-      return true;
-    });
-    return items.length ? { ...sec, items } : null;
-  }).filter(Boolean);
-
-  const filteredItems = filteredSections.flatMap((sec) => sec.items || []);
-  const totalItems = filteredItems.length;
-  const completedItems = filteredItems.filter(
-    (it) => state.items[it.id] && state.items[it.id].checked
-  ).length;
-  const remainingItems = Math.max(totalItems - completedItems, 0);
-
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 48;
-  const contentWidth = pageWidth - margin * 2;
-  const brandBlue = [0, 73, 144];
-  const brandRed = [200, 16, 46];
-  const lightLine = [214, 224, 236];
-  const generatedDate = meta.reviewDate || new Date().toISOString().slice(0, 10);
+  const sections = CHECKLIST_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => !meta.stateFunded ||
+      (section.id !== "federal-reqs" && !STATE_EXCLUDE_ITEM_IDS.has(item.id))),
+  })).filter((section) => section.items.length);
+  const items = sections.flatMap((section) => section.items);
+  const completed = items.filter((item) => state.items[item.id]?.checked).length;
+  const width = doc.internal.pageSize.getWidth();
+  const height = doc.internal.pageSize.getHeight();
+  const margin = 40, bottom = height - 48, bodyWidth = width - margin * 2;
+  const blue = [0, 65, 117], ink = [28, 40, 54], muted = [84, 99, 115];
+  const line = [211, 221, 230];
+  const lineHeight = 13;
   const logoDataUrl = await loadLogoAsDataUrl();
-
-  let y = margin;
-
-  const drawPdfLogo = (x, yPos) => {
+  let y;
+  const clean = (value) => String(value ?? "").replace(/[‘’]/g, "'")
+    .replace(/[“”]/g, '"').replace(/[–—]/g, "-").replace(/\t/g, "    ");
+  const font = (size = 10, style = "normal", color = ink) => {
+    doc.setFont(pdfFont, style);
+    doc.setFontSize(size);
+    doc.setTextColor(...color);
+    doc.setLineHeightFactor(1.3);
+  };
+  const wrap = (text, available, size = 10, style = "normal") => {
+    font(size, style);
+    return doc.splitTextToSize(clean(text) || "-", available);
+  };
+  const rule = (top) => {
+    doc.setDrawColor(...line);
+    doc.setLineWidth(0.5);
+    doc.line(margin, top, width - margin, top);
+  };
+  const pageHeader = () => {
     if (logoDataUrl) {
-      doc.addImage(logoDataUrl, "PNG", x, yPos, 72, 22, undefined, "FAST");
-    } else {
-      // Fallback mark if logo fails to load
-      doc.setFillColor(...brandBlue);
-      doc.roundedRect(x, yPos, 64, 36, 6, 6, "F");
-      doc.setFillColor(...brandRed);
-      doc.rect(x + 36, yPos + 6, 12, 24, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(255, 255, 255);
-      doc.text("AR", x + 10, yPos + 17);
-      doc.text("DOT", x + 8, yPos + 29);
+      const logoWidth = 94;
+      const image = doc.getImageProperties(logoDataUrl);
+      const logoHeight = logoWidth * image.height / image.width;
+      doc.addImage(logoDataUrl, "PNG", width - margin - logoWidth, 28,
+        logoWidth, logoHeight, "ardot-logo", "FAST");
     }
+    font(9, "bold", blue);
+    doc.text("ARDOT  /  CONSTRUCTION CONTRACT DEVELOPMENT", margin, 34);
+    font(19, "bold", blue);
+    doc.text("Proposal Review Checklist", margin, 58);
+    font(9, "normal", muted);
+    // Separate lines keep the title, project identifier and dates from colliding.
+    doc.text(wrap(`Job: ${meta.jobNo || "-"}   |   Call: ${meta.callNo || "-"}`, bodyWidth - 155, 9).slice(0, 2), margin, 76);
+    doc.text(clean(meta.reviewDate || new Date().toISOString().slice(0, 10)), width - margin, 76, { align: "right" });
+    rule(96);
+    y = 110;
   };
-
-  const drawPageHeader = (isContinuation = false) => {
-    doc.setFillColor(245, 248, 255);
-    doc.setDrawColor(...brandBlue);
-    doc.setLineWidth(1);
-    doc.rect(margin, margin - 26, contentWidth, 44, "F");
-
-    drawPdfLogo(margin + 6, margin - 18);
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor(...brandBlue);
-    doc.text("Proposal Checklist - CCD", margin + 82, margin + 4);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(70, 70, 70);
-    const headerSubtitle = isContinuation ? "Continuation" : "Downloadable summary";
-    doc.text(headerSubtitle, margin + 84, margin + 18);
-    doc.text(`Generated: ${generatedDate}`, pageWidth - margin, margin + 4, {
-      align: "right",
-    });
-
-    y = margin + 32;
-  };
-
-  const ensureSpace = (needed = 60) => {
-    if (y + needed > pageHeight - margin) {
-      doc.addPage();
-      drawPageHeader(true);
-    }
-  };
-
-  const drawCheckbox = (x, yPos, checked) => {
-    const size = 12;
-    doc.setLineWidth(1);
-    doc.setDrawColor(0);
-    doc.rect(x, yPos - size + 2, size, size);
-    if (checked) {
-      doc.setDrawColor(50, 150, 50);
-      doc.setLineWidth(2);
-      doc.line(x + 2, yPos - 2, x + 5, yPos - 5);
-      doc.line(x + 5, yPos - 5, x + 10, yPos - 10);
-      doc.setDrawColor(0);
-      doc.setLineWidth(1);
-    }
-  };
-
-  drawPageHeader();
-
-  // Progress chips
-  const chipHeight = 32;
-  const chipWidth = 126;
-  const chipGap = 10;
-  const chipY = y;
-  const chipLabels = [
-    { label: "Completed", value: `${completedItems}/${totalItems}`, color: [56, 142, 60] },
-    { label: "Remaining", value: `${remainingItems}`, color: [220, 120, 40] },
-    { label: "Progress", value: totalItems ? `${Math.round((completedItems / totalItems) * 100)}%` : "0%", color: brandBlue },
-  ];
-  chipLabels.forEach((chip, idx) => {
-    const x = margin + idx * (chipWidth + chipGap);
-    doc.setFillColor(253, 254, 255);
-    doc.setDrawColor(...lightLine);
+  const newPage = () => { doc.addPage(); pageHeader(); };
+  const ensure = (needed) => { if (y + needed > bottom) newPage(); };
+  const checkbox = (top, checked) => {
+    doc.setDrawColor(...(checked ? blue : muted));
     doc.setLineWidth(0.8);
-    doc.roundedRect(x, chipY, chipWidth, chipHeight, 6, 6, "FD");
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(80, 80, 80);
-    doc.text(chip.label, x + 10, chipY + 12);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(...chip.color);
-    doc.text(chip.value, x + 10, chipY + 24);
-  });
-  y += chipHeight + 18;
+    doc.rect(margin + 9, top, 10, 10);
+    if (checked) {
+      doc.setLineWidth(1.4);
+      doc.line(margin + 11, top + 5, margin + 14, top + 8);
+      doc.line(margin + 14, top + 8, margin + 17, top + 2);
+    }
+  };
+  pageHeader();
 
-  // Meta table
-  const tableRows = [
-    [
-      { label: "Job:", value: meta.jobNo || "" },
-      { label: "Call No.:", value: meta.callNo || "" },
-      { label: "FAP:", value: meta.fapNo || "" },
-      { label: "District:", value: meta.district || "" },
-    ],
-    [
-      { label: "Job Name:", value: meta.jobName || "" },
-      { label: "Route/Section:", value: meta.routeSection || "" },
-      { label: "County(ies):", value: meta.county || "" },
-      { label: "Letting Time:", value: meta.lettingTime || "" },
-    ],
-    [
-      { label: "Reviewer:", value: meta.reviewer || "" },
-      { label: "Date:", value: meta.reviewDate || "" },
-    ],
+  // Compact summary: all values remain legible in grayscale.
+  const stats = [
+    ["VERIFIED", `${completed} / ${items.length}`],
+    ["PENDING", String(items.length - completed)],
+    ["COMPLETE", `${items.length ? Math.round(completed / items.length * 100) : 0}%`],
   ];
-
-  const maxCols =
-    tableRows.reduce((max, row) => Math.max(max, row.length), 0) || 1;
-  const colWidth = contentWidth / maxCols;
-  const rowHeight = 34;
-  doc.setLineWidth(0.6);
-  tableRows.forEach((row, rIndex) => {
-    const cells = [...row];
-    while (cells.length < maxCols) cells.push({ label: "", value: "" });
-    cells.forEach((cell, cIndex) => {
-      const x = margin + colWidth * cIndex;
-      const yTop = y + rowHeight * rIndex;
-      doc.setFillColor(rIndex % 2 === 0 ? 250 : 244, 246, 251);
-      doc.setDrawColor(...lightLine);
-      doc.rect(x, yTop, colWidth, rowHeight, "FD");
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.setTextColor(90, 90, 90);
-      if (cell.label) {
-        doc.text(cell.label, x + 8, yTop + 12);
-      }
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-      if (cell.label || cell.value) {
-        doc.text(cell.value || "-", x + 8, yTop + 26, {
-          maxWidth: colWidth - 16,
-        });
-      }
-    });
+  stats.forEach(([label, value], i) => {
+    const x = margin + i * (bodyWidth / 3);
+    font(8, "bold", muted); doc.text(label, x + 10, y + 13);
+    font(17, "bold", blue); doc.text(value, x + 10, y + 34);
   });
-  y += rowHeight * tableRows.length + 14;
+  y += 50;
+  rule(y); y += 10;
 
-  // General comments box
-  const generalNotes = (meta.generalComments || "").trim();
-  if (generalNotes) {
-    const lines = doc.splitTextToSize(generalNotes, contentWidth - 18);
-    const boxHeight = lines.length * 14 + 28;
-    ensureSpace(boxHeight + 12);
-    doc.setFillColor(248, 250, 253);
-    doc.setDrawColor(...lightLine);
-    doc.rect(margin, y, contentWidth, boxHeight, "F");
-    doc.rect(margin, y, contentWidth, boxHeight);
+  // Size each metadata row from its actual wrapped contents. Exceptionally long
+  // imported values continue on another page instead of overflowing the box.
+  const metadata = [
+    [["JOB NUMBER", meta.jobNo], ["CALL NUMBER", meta.callNo], ["FAP", meta.fapNo], ["DISTRICT", meta.district]],
+    [["PROJECT NAME", meta.jobName], ["COUNTY(IES)", meta.county]],
+    [["ROUTE / SECTION", meta.routeSection], ["LETTING TIME", meta.lettingTime]],
+    [["REVIEWER", meta.reviewer], ["REVIEW DATE", meta.reviewDate]],
+  ];
+  metadata.forEach((cells) => {
+    const cellWidth = bodyWidth / cells.length;
+    const values = cells.map((cell) => wrap(cell[1], cellWidth - 20));
+    let offset = 0, maxLines = Math.max(...values.map((value) => value.length));
+    while (offset < maxLines) {
+      ensure(49);
+      const count = Math.min(maxLines - offset, Math.floor((bottom - y - 30) / lineHeight));
+      const rowHeight = count * lineHeight + 26;
+      doc.setFillColor(245, 248, 251); doc.rect(margin, y, bodyWidth, rowHeight, "F");
+      cells.forEach(([label], i) => {
+        const x = margin + cellWidth * i + 10;
+        font(7.5, "bold", muted); doc.text(label + (offset ? " (CONT.)" : ""), x, y + 12);
+        font();
+        const slice = values[i].slice(offset, offset + count);
+        if (slice.length) doc.text(slice, x, y + 27);
+      });
+      y += rowHeight + 3;
+      offset += count;
+      if (offset < maxLines) newPage();
+    }
+  });
+  y += 5;
+  ensure(38);
+  font(9, "bold", blue);
+  doc.text(meta.stateFunded ? "100% STATE FUNDED" : meta.federallyFunded ? "FEDERAL AID" : "FUNDING: NOT SPECIFIED", margin + 10, y + 10);
+  font(8.5, "normal", muted);
+  doc.text("Checked = verified   |   Empty = pending   |   Notes follow their item", margin + 10, y + 26);
+  y += 40;
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(...brandBlue);
-    doc.text("General comments / notes", margin + 10, y + 16);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(60);
-    doc.text(lines, margin + 10, y + 32);
-    doc.setTextColor(0);
-    y += boxHeight + 12;
-  }
-
-  // Funding bar
-  if (meta.stateFunded || meta.federallyFunded) {
-    const label = meta.stateFunded ? "100% State Funded" : "Federal Aid";
-    const color = meta.stateFunded ? [0, 92, 200] : [32, 127, 198];
-    doc.setFillColor(...color);
-    doc.rect(margin, y, contentWidth, 14, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(255, 255, 255);
-    doc.text(label, margin + 6, y + 10);
-    doc.setTextColor(0);
-    y += 24;
-  }
-
-  // Legend box
-  const legendHeight = 58;
-  doc.setFillColor(246, 248, 252);
-  doc.rect(margin, y, contentWidth, legendHeight, "F");
-  doc.setDrawColor(...lightLine);
-  doc.rect(margin, y, contentWidth, legendHeight);
-
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(0);
-
-  drawCheckbox(margin + 10, y + 20, true);
-  doc.setTextColor(0, 120, 0);
-  doc.text("Verified item", margin + 28, y + 18);
-
-  drawCheckbox(margin + 10, y + 44, false);
-  doc.setTextColor(80, 80, 80);
-  doc.text("Pending item", margin + 28, y + 42);
-
-  doc.setTextColor(120, 30, 30);
-  doc.setFont("helvetica", "italic");
-  doc.text("Notes appear in red italic under items.", pageWidth - margin - 220, y + 18);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(80, 80, 80);
-  doc.text("Unchecked items need attention.", pageWidth - margin - 220, y + 40);
-
-  y += legendHeight + 18;
-
-  // Section rendering
-  const itemTextWidth = contentWidth - 180;
-  const reviewerX = margin + itemTextWidth + 60;
-  const dateX = margin + itemTextWidth + 130;
-
-  filteredSections.forEach((sec) => {
-    ensureSpace(80);
-    doc.setFillColor(240, 245, 255);
-    doc.setDrawColor(...brandBlue);
-    doc.rect(margin, y - 12, contentWidth, 26, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    doc.setTextColor(...brandBlue);
-    doc.text(sec.title, margin + 6, y + 4);
-    y += 18;
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(0);
-    doc.text("Item", margin + 6, y);
-    doc.text("Init", reviewerX, y);
-    doc.text("Date", dateX, y);
-    y += 6;
-    doc.setLineWidth(0.4);
-    doc.setDrawColor(...lightLine);
-    doc.line(margin, y, margin + contentWidth, y);
-    y += 10;
-
-    (sec.items || []).forEach((item) => {
-      const entry = state.items[item.id] || {};
-      const textX = margin + 22;
-      const split = doc.splitTextToSize(item.label, itemTextWidth);
-      const rowHeight = Math.max(split.length * 12, 18);
-
-      ensureSpace(rowHeight + 30);
-
-      doc.setFillColor(entry.checked ? 243 : 255, entry.checked ? 252 : 255, entry.checked ? 244 : 255);
-      doc.setDrawColor(...lightLine);
-      doc.rect(margin, y - 6, contentWidth, rowHeight + 14, "F");
-
-      drawCheckbox(margin + 4, y + 4, !!entry.checked);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(0);
-
-      doc.text(split, textX, y);
-
-      const reviewerText = meta.reviewer || "-";
-      const dateText = meta.reviewDate || "-";
-      doc.text(reviewerText, reviewerX, y);
-      doc.text(dateText, dateX, y);
-
-      y += rowHeight;
-
-      const note = (entry.note || "").trim();
-      if (note) {
-        const noteLines = doc.splitTextToSize(`Notes: ${note}`, itemTextWidth);
-        const noteHeight = noteLines.length * 12 + 8;
-        ensureSpace(noteHeight + 10);
-        doc.setFillColor(255, 249, 249);
-        doc.setDrawColor(...lightLine);
-        doc.rect(margin, y - 4, contentWidth, noteHeight, "F");
-        doc.setFont("helvetica", "italic");
-        doc.setTextColor(170, 30, 30);
-        doc.text(noteLines, textX, y);
-        y += noteLines.length * 12;
-        doc.setTextColor(0);
-        doc.setFont("helvetica", "normal");
-      }
-
-      y += 10;
-    });
-
+  const general = clean(meta.generalComments).trim();
+  if (general) {
+    const lines = wrap(general, bodyWidth - 20);
+    let offset = 0;
+    while (offset < lines.length) {
+      ensure(64);
+      const count = Math.min(lines.length - offset, Math.floor((bottom - y - 34) / lineHeight));
+      font(10, "bold", blue);
+      doc.text(offset ? "General comments (continued)" : "General comments", margin + 10, y + 12);
+      font(); doc.text(lines.slice(offset, offset + count), margin + 10, y + 30);
+      y += count * lineHeight + 34;
+      offset += count;
+      if (offset < lines.length) newPage();
+    }
     y += 8;
+  }
+
+  // Each row is measured before placing its section heading. Notes are part of
+  // the same row; rows larger than a full page receive explicit continuations.
+  const textX = margin + 29;
+  const reviewerX = width - margin - 125, dateX = width - margin - 60;
+  const labelWidth = reviewerX - textX - 12;
+  const sectionHeader = (section, continued = false) => {
+    const titleLines = wrap(section.title + (continued ? " (continued)" : ""), bodyWidth - 20, 11, "bold");
+    const titleHeight = titleLines.length * 14 + 12;
+    doc.setFillColor(232, 239, 246);
+    doc.rect(margin, y, bodyWidth, titleHeight, "F");
+    font(11, "bold", blue); doc.text(titleLines, margin + 9, y + 16);
+    y += titleHeight;
+    font(8, "bold", muted);
+    doc.text("CHECK ITEM", textX, y + 13);
+    doc.text("REVIEWER", reviewerX, y + 13);
+    doc.text("DATE", dateX, y + 13);
+    y += 21; rule(y);
+  };
+  sections.forEach((section) => {
+    const rows = section.items.map((item) => {
+      const entry = state.items[item.id] || {};
+      const label = wrap(item.label, labelWidth);
+      const note = clean(entry.note).trim();
+      const notes = note ? wrap(`Notes: ${note}`, labelWidth, 9, "italic") : [];
+      const reviewer = wrap(meta.reviewer, 56, 9);
+      const date = wrap(meta.reviewDate, 60, 9);
+      const mainLines = Math.max(label.length, reviewer.length, date.length);
+      return { entry, label, notes, reviewer, date, mainLines, height: 18 + (mainLines + notes.length) * lineHeight + (notes.length ? 5 : 0) };
+    });
+    const headingHeight = wrap(section.title, bodyWidth - 20, 11, "bold").length * 14 + 33;
+    ensure(headingHeight + Math.min(rows[0].height, 100));
+    sectionHeader(section);
+    rows.forEach((row) => {
+      // Keep ordinary item + note rows intact across page boundaries.
+      if (y + row.height > bottom && row.height <= bottom - 110 - headingHeight) {
+        newPage(); sectionHeader(section, true);
+      }
+      const label = [...row.label];
+      const reviewer = [...row.reviewer], date = [...row.date];
+      // Pad so notes always appear below all three columns.
+      while (label.length < row.mainLines) label.push("");
+      const content = label.map((text, i) => ({text, reviewer: reviewer[i], date: date[i], note: false}));
+      content.push(...row.notes.map((text) => ({text, note: true})));
+      let offset = 0;
+      while (offset < content.length) {
+        if (bottom - y < 45) { newPage(); sectionHeader(section, true); }
+        const count = Math.min(content.length - offset, Math.floor((bottom - y - 18) / lineHeight));
+        const rowHeight = count * lineHeight + 18;
+        doc.setFillColor(...(row.entry.checked ? [246, 249, 251] : [255, 255, 255]));
+        doc.rect(margin, y, bodyWidth, rowHeight, "F");
+        if (!offset) checkbox(y + 9, !!row.entry.checked);
+        else { font(7, "bold", muted); doc.text("cont.", margin + 3, y + 16); }
+        content.slice(offset, offset + count).forEach((part, i) => {
+          const baseline = y + 17 + i * lineHeight;
+          font(part.note ? 9 : 10, part.note ? "italic" : "normal", part.note ? [136, 35, 48] : ink);
+          if (part.text) doc.text(part.text, textX, baseline);
+          font(9);
+          if (part.reviewer) doc.text(part.reviewer, reviewerX, baseline);
+          if (part.date) doc.text(part.date, dateX, baseline);
+        });
+        y += rowHeight; rule(y);
+        offset += count;
+        if (offset < content.length) { newPage(); sectionHeader(section, true); }
+      }
+    });
+    y += 12;
   });
 
+  const pages = doc.getNumberOfPages();
+  for (let page = 1; page <= pages; page++) {
+    doc.setPage(page);
+    rule(height - 35);
+    font(8, "normal", muted);
+    doc.text("CCD  /  Proposal review record", margin, height - 21);
+    doc.text(`Page ${page} of ${pages}`, width - margin, height - 21, { align: "right" });
+  }
   doc.save(`CCD_Checklist_${meta.jobNo || "job"}.pdf`);
 }
 
